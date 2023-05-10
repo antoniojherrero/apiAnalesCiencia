@@ -23,6 +23,10 @@ tags:
     description: User management
   - name: '💡 Products'
     description: Product management
+  - name: 'Persons'
+    description: People management
+  - name: 'Entities'
+    description: Entities management
 
 paths:
   '/access_token':
@@ -564,6 +568,245 @@ paths:
         '406':
           $ref: '#/components/responses/Response_406'
 
+  '/persons':
+    get:
+      tags:
+        - 'Persons'
+      summary: Retrieves the collection of Person resources.
+      description: Returns all persons from the system that the user has access to.
+      operationId: readPersons
+      parameters:
+        - $ref: '#/components/parameters/orderParam'
+        - $ref: '#/components/parameters/orderingParam'
+      responses:
+        '200':
+          description: Array of persons
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    description: Persons array
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Person'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '404':
+          $ref: '#/components/responses/Response_404'
+    post:
+      tags:
+        - 'Persons'
+      summary: Creates a Person resource.
+      description: Creates a new person
+      operationId: createPerson
+      security:
+        - MiWApiSecurity: [ writer ]
+      requestBody:
+        $ref: '#/components/requestBodies/ElementRequestBody'
+      responses:
+        '201':
+          description: '`Created`: person created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+        '400':
+          $ref: '#/components/responses/Response_400'
+        '401':
+          $ref: '#/components/responses/Response_401'
+        '403':
+          $ref: '#/components/responses/Response_403'
+        '422':
+          $ref: '#/components/responses/Response_422'
+    options:
+      tags:
+        - 'Persons'
+      summary: Provides the list of HTTP supported methods.
+      description: Return a `Allow` header with a comma separated list of HTTP supported methods.
+      operationId: cOptionsPerson
+      responses:
+        '204':
+          description: '`Allow` header &lt;Response body is empty&gt;'
+          headers:
+            Allow:
+              $ref: '#/components/headers/Allow'
+  '/persons/{personId}':
+    parameters:
+      - $ref: '#/components/parameters/personId'
+    get:
+      tags:
+        - 'Persons'
+      summary: Retrieves a Person resource based on a single ID.
+      description: Returns the person identified by `personId`.
+      operationId: readPerson
+      # security:
+      #   - MiWApiSecurity: [ reader ]
+      responses:
+        '200':
+          description: Person
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '404':
+          $ref: '#/components/responses/Response_404'
+    put:
+      tags:
+        - 'Persons'
+      summary: Updates the Person resource.
+      description: Updates the person identified by `personId`.
+      operationId: updatePerson
+      security:
+        - MiWApiSecurity: [ writer ]
+      requestBody:
+        $ref: '#/components/requestBodies/ElementRequestBody'
+      parameters:
+        - $ref: '#/components/parameters/ifMatchParam'
+      responses:
+        '209':
+          description: '`Content Returned`: person previously existed and is now updated'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '400':
+          $ref: '#/components/responses/Response_400'
+        '401':
+          $ref: '#/components/responses/Response_401'
+        # '403':
+        #   $ref: '#/components/responses/Response_403'
+        '404':
+          $ref: '#/components/responses/Response_404'
+        '412':
+          $ref: '#/components/responses/Response_412'
+    delete:
+      tags:
+        - 'Persons'
+      summary: Removes the Person resource.
+      description: Deletes the person identified by `productId`.
+      operationId: deletePerson
+      security:
+        - MiWApiSecurity: [ writer ]
+      responses:
+        '204':
+          description: Person deleted &lt;Response body is empty&gt;
+        '401':
+          $ref: '#/components/responses/Response_401'
+        # '403':
+        #   $ref: '#/components/responses/Response_403'
+        '404':
+          $ref: '#/components/responses/Response_404'
+    options:
+      tags:
+        - 'Persons'
+      summary: Provides the list of HTTP supported methods.
+      description: Return a `Allow` header with a comma separated list of HTTP supported methods.
+      operationId: optionsPerson
+      responses:
+        '204':
+          description: '`Allow` header &lt;Response body is empty&gt;'
+          headers:
+            Allow:
+              $ref: '#/components/headers/Allow'
+  '/persons/{personId}/products':
+    get:
+      tags:
+        - 'Persons'
+      summary: List of products related to the person
+      description: Returns the products related to the person `personId`
+      operationId: readPersonProducts
+      # security:
+      #   - MiWApiSecurity: [ reader ]
+      parameters:
+        - $ref: '#/components/parameters/personId'
+      responses:
+        '200':
+          description: Array of Products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entities:
+                    description: Product array
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        # '401':
+        #   $ref: '#/components/responses/Response_401'
+        '404':
+          $ref: '#/components/responses/Response_404'
+  '/persons/{personId}/entities':
+    get:
+      tags:
+        - 'Persons'
+      summary: List of entities related to the person
+      description: Returns the entities related to the person `personId`
+      operationId: readPersonEntities
+      # security:
+      #   - MiWApiSecurity: [ reader ]
+      parameters:
+        - $ref: '#/components/parameters/personId'
+      responses:
+        '200':
+          description: Array of Entities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entities:
+                    description: Entity array
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Entity'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        # '401':
+        #   $ref: '#/components/responses/Response_401'
+        '404':
+          $ref: '#/components/responses/Response_404'
+  '/persons/{personId}/entities/{operation}/{entityId}':
+    put:
+      tags:
+        - 'Persons'
+      summary: Sets or remove the relationship person-entity
+      description: Establishes/Removes the relationship of the person with the entity
+      operationId: api_person_add_rem_entity
+      security:
+        - MiWApiSecurity: [ writer ]
+      parameters:
+        - $ref: '#/components/parameters/personId'
+        - $ref: '#/components/parameters/operationParam'
+        - $ref: '#/components/parameters/entityId'
+      responses:
+        '209':
+          description: '`Content Returned`: person is now updated'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '401':
+          $ref: '#/components/responses/Response_401'
+        '403':
+          $ref: '#/components/responses/Response_403'
+        '404':
+          $ref: '#/components/responses/Response_404'
+        '406':
+          $ref: '#/components/responses/Response_406'
 components:
   schemas:
     User:
