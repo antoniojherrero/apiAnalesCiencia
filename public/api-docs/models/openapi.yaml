@@ -779,7 +779,35 @@ paths:
         #   $ref: '#/components/responses/Response_401'
         '404':
           $ref: '#/components/responses/Response_404'
-  '/persons/{personId}/entities/{operation}/{entityId}':
+  '/persons/{personId}/products/{operation}/{productId}':
+    put:
+      tags:
+        - 'Persons'
+      summary: Sets or remove the relationship person-product
+      description: Establishes/Removes the relationship of the person with the product
+      operationId: api_person_add_rem_product
+      security:
+        - MiWApiSecurity: [ writer ]
+      parameters:
+        - $ref: '#/components/parameters/personId'
+        - $ref: '#/components/parameters/operationParam'
+        - $ref: '#/components/parameters/productId'
+      responses:
+        '209':
+          description: '`Content Returned`: person is now updated'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '401':
+          $ref: '#/components/responses/Response_401'
+        '403':
+          $ref: '#/components/responses/Response_403'
+        '404':
+          $ref: '#/components/responses/Response_404'
+        '406':
+          $ref: '#/components/responses/Response_406'
+  '/persons/{personId}/entities/{operation}/{stuffId}':
     put:
       tags:
         - 'Persons'
