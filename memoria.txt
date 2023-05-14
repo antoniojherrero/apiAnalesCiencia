@@ -37,6 +37,10 @@ de PHP se ejecutará el comando:
 
 Una vez hecho esto, la aplicación estará disponible en http://127.0.0.1:8000/
 
+Si se quieren hacer pruebas sin ejecutar los test se han de crear Usuarios son el script ./src/scripts/newUser.php
+que crea usuarios de la aplicación de forma aleatoria. Además, se podrán crear elementos(Productos, Entidades o Personas)
+aleatorios con el script create.php
+
 ## Implementación
 
 La implementación requerida en este proyecto se resume a la programación del cuerpo de las siguientes funciones:
@@ -57,6 +61,13 @@ getPersonname y getEntityname son dos funciones con un cuerpo similar. Se reduce
 ElementBaseQueryController::getElementByName la cual devuelve un objeto response con status code 204 en caso de que exista el elemento con nombre
 igual al especificado en el parámetro(personname o entityname según corresponda); el status code es 404 en caso de que no se encuentre.
 
-Las funciones getEntities, getProducts(rel. personas), getProducts(rel. entidades)  y getPersons también son similares. Todos ellos obtienen mediante
+Las funciones getEntities, getProducts(rel. personas), getProducts(rel. entidades)  y getPersons son similares. Todos ellos obtienen mediante
 el EntityManager de Doctrine el elemento (Persona o Entidad según corresponda) y obtener el conjunto de objetos relacionados(Productos, Entidades o Personas)
 a dicho elemento. Por último se llama a la función  ElementRelationsBaseController::getElements que genera el objeto Response.
+
+Por último, las funciones 'operation' son también similares. Simplemente llaman a la función  ElementRelationsBaseController::operationRelatedElements
+pasando como parámetro la petición, la respuesta, el array de argumentos y el nombre de la clase de elemento a añadir o eliminar. Esta función recupera el elemento
+a editar, el elemento relacionado con éste y si ambos existen ejecuta la operación especificada en el path de la petición añadiendo o eliminando según
+corresponda.
+
+## Especificación de la API
