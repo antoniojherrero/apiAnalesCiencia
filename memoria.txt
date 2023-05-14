@@ -71,3 +71,21 @@ a editar, el elemento relacionado con éste y si ambos existen ejecuta la operac
 corresponda.
 
 ## Especificación de la API
+
+Se ha completado la especificación proporcionada inicialmente añadiendo los endpoints correspondientes a Personas y Entidades. Estos endpoints son
+los correspondientes a las operaciones básicas de un elemento tales como GET, cGET, POST, PUT, DELETE, OPTIONS; y los correspondientes a las operaciones
+relacionadas con las implementaciones descritas en el apartado anterior como:
+
+- GET /persons/personname/{personname}
+- GET /persons/{personId}/entities
+- GET /persons/{personId}/products
+- PUT /persons/{personId}/products/{operation}/{productId}
+- PUT /persons/{personId}/entities/{operation}/{entityId}
+
+- GET /entities/entityname/{entityname}
+- GET /entities/{entityId}/products
+- GET /entities/{entityId}/persons
+- PUT /entities/{entityId}/products/{operation}/{productId}
+- PUT /entities/{entityId}/persons/{operation}/{personId}
+
+Además, se ha tenido que incorporar en el apartado 'parameters' de la especificación personName y entityName ya que no existian inicialmente.
