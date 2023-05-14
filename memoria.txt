@@ -1,0 +1,17 @@
+Este proyecto implementa una interfaz de programación REST desarrollada sobre
+el framework Slim. La aplicación proporciona las operaciones
+habituales para la gestión de Productos, Entidades y Personas.
+
+Para hacer más sencilla la gestión de los datos se ha utilizado
+el ORM [Doctrine][doctrine]. Doctrine 2 es un Object-Relational Mapper que proporciona
+persistencia transparente para objetos PHP. Utiliza el patrón Data Mapper
+con el objetivo de obtener un desacoplamiento completo entre la lógica de negocio y la
+persistencia de los datos en los sistemas de gestión de bases de datos.
+
+Para su configuración, este proyecto se apoya en el componente Dotenv, que
+permite realizar la configuración a través de variables de entorno.
+
+## Instalación del proyecto
+
+El primer paso consiste en generar un esquema de base de datos vacío y una pareja usuario/contraseña
+con privilegios completos sobre dicho esquema.
