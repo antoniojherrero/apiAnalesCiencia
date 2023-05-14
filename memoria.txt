@@ -13,5 +13,37 @@ permite realizar la configuración a través de variables de entorno.
 
 ## Instalación del proyecto
 
-El primer paso consiste en generar un esquema de base de datos vacío y una pareja usuario/contraseña
-con privilegios completos sobre dicho esquema.
+El primer paso consiste en generar dos esquemas de base de datos vacíos y una pareja usuario/contraseña
+con privilegios completos sobre dicho esquema:
+
+> DATABASE_NAME=t2023
+> DATABASE_TEST_NAME=t2023_test
+> DATABASE_USER=t2023
+> DATABASE_PASSWD=t2023
+
+Una vez realizado esto, se deben ejecutar los siguientes comandos:
+> composer install
+> bin/doctrine orm:schema:update --dump-sql --force
+
+Para verificar la validez de la información de mapeo y la sincronización con la base de datos:
+> bin/doctrine orm:validate
+
+## Puesta en marcha de la aplicación
+
+Para acceder a la aplicación utilizando el servidor interno del intérprete
+de PHP se ejecutará el comando:
+
+> php -S 127.0.0.1:8000 -t public
+
+Una vez hecho esto, la aplicación estará disponible en http://127.0.0.1:8000/
+
+## Implementación
+
+La implementación requerida en este proyecto se resume a la programación del cuerpo de las siguientes funciones:
+
+- PersonQueryController::getPersonname
+- PersonRelationsController::getEntities
+- PersonRelationsController::operationEntity
+- PersonRelationsController::getProducts
+- PersonRelationsController::operationProduct
+
