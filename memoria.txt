@@ -47,3 +47,16 @@ La implementación requerida en este proyecto se resume a la programación del c
 - PersonRelationsController::getProducts
 - PersonRelationsController::operationProduct
 
+- EntityQueryController::getEntityname
+- EntityRelationsController::getPersons
+- EntityRelationsController::operationPerson
+- EntityRelationsController::getProducts
+- EntityRelationsController::operationProduct
+
+getPersonname y getEntityname son dos funciones con un cuerpo similar. Se reducen a retornar la llamada de la función
+ElementBaseQueryController::getElementByName la cual devuelve un objeto response con status code 204 en caso de que exista el elemento con nombre
+igual al especificado en el parámetro(personname o entityname según corresponda); el status code es 404 en caso de que no se encuentre.
+
+Las funciones getEntities, getProducts(rel. personas), getProducts(rel. entidades)  y getPersons también son similares. Todos ellos obtienen mediante
+el EntityManager de Doctrine el elemento (Persona o Entidad según corresponda) y obtener el conjunto de objetos relacionados(Productos, Entidades o Personas)
+a dicho elemento. Por último se llama a la función  ElementRelationsBaseController::getElements que genera el objeto Response.
