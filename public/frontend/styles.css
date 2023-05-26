@@ -32,8 +32,8 @@ section{
 	float: left;
 }
 footer{
+	text-align: center;
 	width: 33%;
-	max-width: 33%;
 }
 table{
 	font-size: large;

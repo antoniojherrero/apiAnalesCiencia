@@ -64,6 +64,14 @@ class User implements JsonSerializable, Stringable
     )]
     protected Role $role;
 
+    #[ORM\Column(
+        name: "estado",
+        type: "string",
+        length: 15,
+        nullable: false,
+        enumType: Status::class
+    )]
+    protected Status $estado;
     /**
      * User constructor.
      *
@@ -71,20 +79,22 @@ class User implements JsonSerializable, Stringable
      * @param string $email email
      * @param string $password password
      * @param Role|string $role Role::*
-     *
+     * @param Status|string $estado Status::*
      * @throws InvalidArgumentException
      */
     public function __construct(
         string $username = '',
         string $email = '',
         string $password = '',
-        Role|string $role = Role::READER
+        Role|string $role = Role::READER,
+        Status|string $estado = Status::UNAUTHORIZED
     ) {
         $this->id       = 0;
         $this->username = $username;
         $this->email    = $email;
         $this->setPassword($password);
         $this->setRole($role);
+        $this->estado=$estado;
     }
 
     /**
@@ -237,6 +247,7 @@ class User implements JsonSerializable, Stringable
                 'username' => $this->getUsername(),
                 'email' => $this->getEmail(),
                 'role' => $this->role->name,
+                'estado' => $this->estado->name,
             ]
         ];
     }
