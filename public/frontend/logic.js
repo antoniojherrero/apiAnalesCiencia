@@ -12,7 +12,7 @@ function getProducts() {
                 let elem = data.products[prod].product
                 $('#productos').append(
                     '<tr id="' + elem.id + '">' +
-                    '<td><img src="' + elem.imageUrl + '" width="25" height="25"></td>' +
+                    '<td><img src="' + elem.imageUrl + '" width="25" height="25" alt=""></td>' +
                     '<td class="elemName" onclick="readProduct(this);">' + elem.name + '</td>' +
                     (writer ? '<td><input type="button" name="' + elem.name + '" value="Editar" onclick="updateProduct(this);"></td><td><input type="button" name="' + elem.name + '" value="Eliminar" onclick="deleteProduct(this);"></td>' : '') +
                     '</tr>'
@@ -45,7 +45,7 @@ function getPersons() {
                 let elem = data.persons[person].person
                 $('#personas').append(
                     '<tr id="' + elem.id + '">' +
-                    '<td><img src="' + elem.imageUrl + '" width="25" height="25"></td>' +
+                    '<td><img src="' + elem.imageUrl + '" width="25" height="25" alt=""></td>' +
                     '<td class="elemName" onclick="readPerson(this);">' + elem.name + '</td>' +
                     (writer ? '<td><input type="button" name="' + elem.name + '" value="Editar" onclick="updatePerson(this);"></td><td><input type="button" name="' + elem.name + '" value="Eliminar" onclick="deletePerson(this);"></td>' : '') +
                     '</tr>'
@@ -74,11 +74,11 @@ function getEntities() {
         headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
         // dataType: 'json',
         success: function (data) {
-            for (ety in data.entities) {
-                let elem = data.entities[ety].entity
+            for (entity in data.entities) {
+                let elem = data.entities[entity].entity
                 $('#entidades').append(
                     '<tr id="' + elem.id + '">' +
-                    '<td><img src="' + elem.imageUrl + '" width="25" height="25"></td>' +
+                    '<td><img src="' + elem.imageUrl + '" width="25" height="25" alt=""></td>' +
                     '<td class="elemName" onclick="readEntity(this);">' + elem.name + '</td>' +
                     (writer ? '<td><input type="button" name="' + elem.name + '" value="Editar" onclick="updateEntity(this);"></td><td><input type="button" name="' + elem.name + '" value="Eliminar" onclick="deleteEntity(this);"></td>' : '') +
                     '</tr>'
@@ -174,7 +174,8 @@ function LogOut() {
         window.sessionStorage.removeItem('usrData')
         main.innerHTML = ''
         main.innerHTML =
-            '<section style="width: 40%; max-width: 50%; margin-left: 30%; text-align: center; border-style: solid; border-width: medium;">'
+             '<h3 style="text-align: center; color: yellow">Inicio de sesión</h3>'
+            +'<section style="width: 40%; max-width: 50%; margin-left: 30%; text-align: center; border-style: solid; border-width: medium;">'
             + '<form id="form-login" method="post">'
             + '<label for="username">Usuario: </label><br>'
             + '<input type="text" id="username" name="username" placeholder="Usuario" autofocus/><br>'
@@ -452,34 +453,103 @@ function crearProducto() {
 
 function crearPersona() {
     create('Persona')
-    let fieldset = document.getElementsByTagName('fieldset')[0]
-    fieldset.innerHTML += '<input type="submit" value="Enviar";">'
+
+    $('#creationForm').on('submit', ()=>{editPerson()})
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/products',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.products.length > 0) {
+                $('fieldset').append('<h3>Productos</h3><ul id="productsList"></ul>')
+                for (product in data.products) {
+                    let elemento = data.products[product].product
+
+                    $('#productsList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox">' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/entities',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.entities.length > 0) {
+                $('fieldset').append('<h3>Entidades colaboradoras</h3><ul id="entitiesList"></ul>')
+                for (entity in data.entities) {
+                    let elemento = data.entities[entity].entity
+                    $('#entitiesList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox">' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
 }
 
 function crearEntidad() {
     create('Entidad')
 
-    let fieldset = document.getElementsByTagName('fieldset')[0]
+    $('#creationForm').on('submit', ()=>{editEntity()})
 
-    fieldset.innerHTML += '<h3 style="text-align: left; color: yellow;">Participantes<h3>'
-    let peopleList = document.createElement('ul')
-    peopleList.setAttribute('id', 'peopleList')
-    for (person of people) {
-        let listItem = document.createElement('li')
-        listItem.setAttribute('id', person.id)
-        let label = document.createElement('label')
-        label.setAttribute('for', person.id)
-        label.appendChild(document.createTextNode(person.name))
-        let checkbox = document.createElement('input')
-        checkbox.setAttribute('id', person.id)
-        checkbox.setAttribute('type', 'checkbox')
-        listItem.appendChild(label)
-        listItem.appendChild(checkbox)
-        peopleList.appendChild(listItem)
-    }
-    fieldset.appendChild(peopleList)
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/products',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.products.length > 0) {
+                $('fieldset').append('<h3>Productos</h3><ul id="productsList"></ul>')
+                for (product in data.products) {
+                    let elemento = data.products[product].product
 
-    fieldset.innerHTML += '<input type="submit" value="Enviar";">'
+                    $('#productsList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox">' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/persons',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.persons.length > 0) {
+                $('fieldset').append('<h3>Participantes</h3><ul id="peopleList"></ul>')
+                for (person in data.persons) {
+                    let elemento = data.persons[person].person
+                    $('#peopleList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox">' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
 }
 
 function editRelatedProducts(relatedTo, elem, productsList) {
@@ -657,7 +727,7 @@ function editPerson(etag = null) {
         $.ajax({
             type: "POST",
             url: '/api/v1/persons',
-            headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+            headers: {"Authorization": 'Bearer '+JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
             data: persona,
             // dataType: 'json',
             success: function (data) {
@@ -701,7 +771,7 @@ function editEntity(etag = null) {
         $.ajax({
             type: "POST",
             url: '/api/v1/entities',
-            headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+            headers: {"Authorization": 'Bearer '+JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
             data: entidad,
             // dataType: 'json',
             success: function (data) {

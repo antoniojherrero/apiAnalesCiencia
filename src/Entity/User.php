@@ -69,9 +69,9 @@ class User implements JsonSerializable, Stringable
         type: "string",
         length: 15,
         nullable: false,
-        enumType: Status::class
+        enumType: Estado::class
     )]
-    protected Status $estado;
+    protected Estado $estado;
     /**
      * User constructor.
      *
@@ -79,7 +79,7 @@ class User implements JsonSerializable, Stringable
      * @param string $email email
      * @param string $password password
      * @param Role|string $role Role::*
-     * @param Status|string $estado Status::*
+     * @param Estado|string $estado Estado::*
      * @throws InvalidArgumentException
      */
     public function __construct(
@@ -87,7 +87,7 @@ class User implements JsonSerializable, Stringable
         string $email = '',
         string $password = '',
         Role|string $role = Role::READER,
-        Status|string $estado = Status::UNAUTHORIZED
+        Estado|string $estado = Estado::UNAUTHORIZED
     ) {
         $this->id       = 0;
         $this->username = $username;
@@ -222,6 +222,24 @@ class User implements JsonSerializable, Stringable
         return password_verify($password, $this->password_hash);
     }
 
+    /**
+     * @return Estado
+     */
+    public function getEstado(): Estado
+    {
+        return $this->estado;
+    }
+
+    /**
+     * @param Estado $estado
+     */
+    public function setEstado(Estado $estado): void
+    {
+        $this->estado = $estado;
+    }
+
+
+
     public function __toString(): string
     {
         return
@@ -247,7 +265,7 @@ class User implements JsonSerializable, Stringable
                 'username' => $this->getUsername(),
                 'email' => $this->getEmail(),
                 'role' => $this->role->name,
-                'estado' => $this->estado->name,
+                'estado' => $this->estado->value,
             ]
         ];
     }
