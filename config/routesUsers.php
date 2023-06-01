@@ -65,8 +65,8 @@ return function (App $app) {
     $app->post(
         $_ENV['RUTA_API'] . UpdateCommand::PATH_USERS,
         CreateCommand::class
-    )->setName('tdw_users_create')
-        ->add(JwtMiddleware::class);
+    )->setName('tdw_users_create');
+        //->add(JwtMiddleware::class);
 
     // PUT: Updates a user
     $app->put(

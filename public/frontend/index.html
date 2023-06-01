@@ -15,8 +15,8 @@
 		</header>
 		<nav></nav>
 		<main>
-			<h3 style="text-align: center; color: yellow">Inicio de sesión</h3>
-			<section style="width: 40%; max-width: 50%; margin-left: 30%; text-align: center; border-style: solid; border-width: medium;">
+			<section style="width: 40%; max-width: 50%; margin-left: 30%; margin-right: 30%;  text-align: center; border-style: solid; border-width: medium;">
+				<h3 style="text-align: center; color: yellow">Inicio de sesión</h3>
 				<form id="form-login" method="post">
 					<label for="username">Usuario: </label>
 					<br>
@@ -27,6 +27,17 @@
 					<input type="password" id="password" name="password" placeholder="Palabra clave"/>
 					<br>
 					<input type="button" id="btn-login" value="Login" onclick="LogInAjax();"/>
+				</form>
+			</section>
+			<br><br>
+			<section id="signin-section" style="width: 40%; max-width: 50%; margin-left: 30%; margin-top: 2%; text-align: center; border-style: solid; border-width: medium;">
+				<h3 style="text-align: center; color: yellow">Registro</h3>
+				<form id="form-signin" method="post">
+					<label for="newUsername">Usuario: </label>
+					<br>
+					<input type="text" id="newUsername" placeholder="Nuevo Usuario" required/>
+					<br>
+					<input type="button" id="btn-signin" value="Siguiente" onclick="checkIfUserExists();"/>
 				</form>
 			</section>
 		</main>

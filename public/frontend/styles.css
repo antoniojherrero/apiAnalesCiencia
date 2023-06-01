@@ -13,6 +13,7 @@ nav {
 	margin-top: 10px;
 }
 label{
+	color: yellow;
 	font-weight: bold;
 }
 input {
@@ -36,6 +37,7 @@ footer{
 	width: 33%;
 }
 table{
+	border-collapse: collapse;
 	font-size: large;
 	margin-right: auto;
 	margin-left: auto;
@@ -43,10 +45,9 @@ table{
 caption{
 	color: grey;
 }
-tr{
-	outline-style: solid;
-	outline-width: medium;
-	outline-color: red;
+td{
+	color: yellow;
+	border: solid red;
 }
 ul{
 	overflow:hidden;
@@ -59,25 +60,4 @@ ul{
 .elemName:hover{
 	text-decoration: underline;
 	background-color: rgb(64, 64, 64);
-}
-a:link {
-	color: blue;
-	background-color: transparent;
-	text-decoration: underline;
-}
-a:visited {
-	color: pink;
-	background-color: transparent;
-	text-decoration: underline;
-}
-a:hover {
-  color: red;
-  background-color: transparent;
-  text-decoration: underline;
-}
-
-a:active {
-  color: yellow;
-  background-color: transparent;
-  text-decoration: underline;
 }

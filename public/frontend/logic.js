@@ -101,15 +101,17 @@ function getEntities() {
 }
 
 function readIndex() {
-    writer = window.sessionStorage.getItem('writer')
+    writer = JSON.parse(window.sessionStorage.getItem('writer'))
     username = JSON.parse(window.sessionStorage.getItem('usrData')).username
-    let loginForm = document.createElement('form')
-    loginForm.innerHTML = '<input type="button" id="username" value="' + username + '"/> '
-    loginForm.innerHTML += '<input type="button" id="logout" value="Cerrar Sesión" onclick="LogOut();"/>'
-
+    let navForm = document.createElement('form')
+    navForm.innerHTML = '<label for="username">Perfil: </label>'
+    navForm.innerHTML += '<input type="button" id="username" value="' + username + '" onclick="showProfile();"/> '
+    navForm.innerHTML += '<input type="button" id="logout" value="Cerrar Sesión" onclick="LogOut();"/>'
+    navForm.innerHTML += (writer ? '<input style="float: right" type="button" id="userMgmt" value="Usuarios" onclick="getUsers();"/>' : '')
     let nav = document.getElementsByTagName('nav')[0]
     nav.innerHTML = ''
-    nav.appendChild(loginForm)
+    nav.appendChild(navForm)
+
 
     let main = document.getElementsByTagName('main')[0]
     main.innerHTML = ''
@@ -149,10 +151,16 @@ function LogInAjax() {
         authHeader = request.getResponseHeader('Authorization');
         let token = authHeader.split(' ')[1];   // Elimina 'Bearer '
         let usrData = JSON.parse(atob(token.split('.')[1]));
+
         if (usrData.scopes.length === 2) {
             window.sessionStorage.setItem('writer', true)
+        } else {
+            window.sessionStorage.setItem('writer', false)
         }
+
+        data.id = usrData.uid
         data.username = usrData.sub
+
         window.sessionStorage.setItem('usrData', JSON.stringify(data))
         readIndex()
         console.log(data)
@@ -162,28 +170,14 @@ function LogInAjax() {
         if (xhr.responseJSON && xhr.responseJSON.error_description) {
             message = xhr.responseJSON.error_description;
         }
-        alert("Incorrecto :( \n" + message)
+        alert("Error! \n" + message)
     });
 }
 
 function LogOut() {
-    let main = document.getElementsByTagName('main')[0]
-    let nav = document.getElementsByTagName('nav')[0]
-    nav.innerHTML = ''
     if (window.confirm('Cerrar la sesión de ' + username + ' ?')) {
-        window.sessionStorage.removeItem('usrData')
-        main.innerHTML = ''
-        main.innerHTML =
-             '<h3 style="text-align: center; color: yellow">Inicio de sesión</h3>'
-            +'<section style="width: 40%; max-width: 50%; margin-left: 30%; text-align: center; border-style: solid; border-width: medium;">'
-            + '<form id="form-login" method="post">'
-            + '<label for="username">Usuario: </label><br>'
-            + '<input type="text" id="username" name="username" placeholder="Usuario" autofocus/><br>'
-            + '<label for="password">Contraseña: </label><br>'
-            + '<input type="password" id="password" name="password" placeholder="Palabra clave"/><br>'
-            + '<input type="button" id="btn-login" value="Login" onclick="LogInAjax();"/>'
-            + '</form>'
-            + '</section>'
+        window.sessionStorage.clear()
+        window.location.reload()
     }
 }
 
@@ -404,7 +398,9 @@ function create(title) {
 function crearProducto() {
     create('Producto')
 
-    $('#creationForm').on('submit', ()=>{editProduct()})
+    $('#creationForm').on('submit', () => {
+        editProduct()
+    })
 
     $.ajax({
         type: "GET",
@@ -454,7 +450,9 @@ function crearProducto() {
 function crearPersona() {
     create('Persona')
 
-    $('#creationForm').on('submit', ()=>{editPerson()})
+    $('#creationForm').on('submit', () => {
+        editPerson()
+    })
 
     $.ajax({
         type: "GET",
@@ -505,7 +503,9 @@ function crearPersona() {
 function crearEntidad() {
     create('Entidad')
 
-    $('#creationForm').on('submit', ()=>{editEntity()})
+    $('#creationForm').on('submit', () => {
+        editEntity()
+    })
 
     $.ajax({
         type: "GET",
@@ -682,7 +682,7 @@ function editProduct(etag = null) {
         $.ajax({
             type: "POST",
             url: '/api/v1/products',
-            headers: {"Authorization": 'Bearer '+JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
             data: producto,
             // dataType: 'json',
             success: function (data) {
@@ -727,7 +727,7 @@ function editPerson(etag = null) {
         $.ajax({
             type: "POST",
             url: '/api/v1/persons',
-            headers: {"Authorization": 'Bearer '+JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
             data: persona,
             // dataType: 'json',
             success: function (data) {
@@ -771,7 +771,7 @@ function editEntity(etag = null) {
         $.ajax({
             type: "POST",
             url: '/api/v1/entities',
-            headers: {"Authorization": 'Bearer '+JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
             data: entidad,
             // dataType: 'json',
             success: function (data) {
@@ -1071,13 +1071,332 @@ function updateEntity(elem) {
 }
 
 function getUsers() {
+    let nav = document.getElementsByTagName('nav')[0]
+    nav.innerHTML = '<input type="button" id="Inicio" value="Inicio" onclick="readIndex();"/>'
+    let main = document.getElementsByTagName('main')[0]
+    main.innerHTML = '<table style="border-collapse: collapse;" id="usersTable">' +
+        '<tr><th>id</th><th>username</th><th>email</th></tr>' +
+        '</table>'
+
     $.ajax({
         type: "GET",
         url: '/api/v1/users',
-        headers: {"Authorization": window.sessionStorage.getItem('usrData').access_token},
+        async: false,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
         // dataType: 'json',
+        success: function (data, textStatus, request) {
+            let usuarios = data.users
+            for (let elem of usuarios) {
+
+                if (elem.user.username !== username) {
+                    $('#usersTable').append(
+                        '<tr id="' + elem.user.id + '">' +
+                        '<td>' + elem.user.id + '</td>' +
+                        '<td>' + elem.user.username + '</td>' +
+                        '<td>' + elem.user.email + '</td>' +
+                        '<td>' + elem.user.role + '</td>' +
+                        '<td>' + elem.user.estado + '</td>' +
+                        (elem.user.estado === 'unauthorized'
+                            ? '<td><input type="button" id="authorize" value="Autorizar" onclick="autorizar(this.parentElement.parentElement);"/></td>'
+                            : '<td><input type="button" id="editUser" value="Editar" onclick="updateUser(this.parentElement.parentElement);"/></td>') +
+                        '<td><input type="button" id="deleteUser" value="Dar de Baja" onclick="deleteUser(this.parentElement.parentElement)"/></td>' +
+                        '</tr>')
+                } else {
+                    $('main').prepend(
+                        '<table><tr>' +
+                        '<td>' + elem.user.id + '</td>' +
+                        '<td>' + elem.user.username + '</td>' +
+                        '<td>' + elem.user.email + '</td>' +
+                        '<td>' + elem.user.role + '</td>' +
+                        '<td>' + elem.user.estado + '</td>' +
+                        '</tr></table><p style="text-align: center; margin: auto">(YOU)</p><br>'
+                    )
+                }
+            }
+        }
+    })
+}
+
+function updateUser(row) {
+    let role = row.children[3].innerText
+    let estado = row.children[4].innerText
+    let nav = document.getElementsByTagName('nav')[0]
+    nav.innerHTML = '<input type="button" name="cancel" value="Cancel" onclick="getUsers();">'
+    let main = document.getElementsByTagName('main')[0]
+    main.innerHTML = ''
+
+    let fieldset = document.createElement('fieldset')
+    fieldset.style.width = '25%'
+    fieldset.style.maxWidth = '50%'
+    fieldset.style.marginLeft = '37.5%'
+    fieldset.style.textAlign = 'center'
+    fieldset.style.borderStyle = 'solid'
+    fieldset.style.borderWidth = 'medium'
+    fieldset.setAttribute('id', row.id)
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/users/' + row.id,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data, statusText, response) {
+            fieldset.innerHTML = '<legend>Editar ' + row.children[1].innerText + '</legend>' +
+                '<label for="role">Role</label>' +
+                '<select id="role">' +
+                '<option value="writer" ' + (role === 'WRITER' ? 'selected' : '') + ' >WRITER</option>' +
+                '<option value="reader" ' + (role === 'READER' ? 'selected' : '') + ' >READER</option>' +
+                '</select>' +
+                '<label for="estado"></label>' +
+                '<select id="estado">' +
+                '<option value="active"' + (estado === 'active' ? 'selected' : '') + '>Active</option>' +
+                '<option value="inactive"' + (estado === 'inactive' ? 'selected' : '') + '>Inactive</option>' +
+                '</select>' +
+                '<input type="button" id="save" value="guardar">'
+            main.appendChild(fieldset)
+            $('#save').on('click', () => {
+                editUser(response.getResponseHeader('etag'))
+            })
+        }
+    })
+}
+
+function editUser(etag) {
+    let fieldset = document.getElementsByTagName('fieldset')[0]
+    data = {
+        "role": document.getElementById('role').value,
+        "estado": document.getElementById('estado').value
+    }
+
+    $.ajax({
+        type: 'PUT',
+        url: '/api/v1/users/' + fieldset.id,
+        async: false,
+        headers: {
+            "Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token,
+            "If-Match": etag
+        },
+        data,
+        success: function () {
+            getUsers()
+        }
+    })
+}
+
+function autorizar(row) {
+    let etag
+
+    $.ajax({
+        type: 'GET',
+        url: '/api/v1/users/' + row.id,
+        async: false,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data, statusText, request) {
+            etag = request.getResponseHeader('etag')
+        }
+    })
+
+    let data = {"estado": "active"}
+    $.ajax({
+        type: 'PUT',
+        url: '/api/v1/users/' + row.id,
+        async: false,
+        headers: {
+            "Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token,
+            "If-Match": etag
+        },
+        data,
+        success: function () {
+            getUsers()
+        }
+    })
+}
+
+function deleteUser(row) {
+    if (window.confirm('Eliminar definitivamente el usuario: ' + row.children[1].innerText)) {
+        $.ajax({
+            type: 'DELETE',
+            url: '/api/v1/users/' + row.id,
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        })
+    }
+    getUsers()
+}
+
+
+function checkIfUserExists() {
+    if ($('#newUsername').val() === '') {
+        window.alert('Introduzca un nombre de usuario válido')
+    } else {
+        $.ajax({
+            type: 'GET',
+            url: '/api/v1/users/username/' + $('#newUsername').val(),
+            success: function () {
+                window.alert('Username en uso')
+            },
+            error: function () {
+                let username = $('#newUsername').val()
+                $('nav').html('<input type="button" id="cancelSignin" value="Cancelar"/>')
+                $('main').html(
+                    '<section style="margin-left: 30%; width: 40%; border-style: solid">' +
+                    '<h4>Registrar nuevo usuario: ' + username + '</h4>' +
+                    '<form method="post">' +
+                    '<input type="hidden" id="username" name="username" value="' + username + '"/>' +
+                    '<label for="name">Nombre: </label>' +
+                    '<input type="text" id="name" name="name" placeholder="Nombre"/><br>' +
+                    '<br><label for="password">Contraseña: </label>' +
+                    '<input type="password" id="password" name="password" placeholder="Palabra clave"/><br>' +
+                    '<br><label for="email">Email: </label>' +
+                    '<input type="email" id="email" name="email" placeholder="Correo electronico"/><br>' +
+                    '<br><label for="birthDate">Fecha de nacimiento: </label>' +
+                    '<input type="date" id="birthDate" name="birthDate"/><br>' +
+                    '<input type="hidden" id="role" name="role" value="reader"/>' +
+                    '<br><input type="button" id="signin" value="Signin" />' +
+                    '</form>' +
+                    '<p>Un administrador del sistema autorizará el alta de su cuenta</p>' +
+                    '</section>'
+                )
+                $("#signin").click(function () {
+                    if (($('#name').val() === '') || ($('#email').val() === '') || ($('#password').val() === '') || ($('#birthDate').val() === '')) {
+                        window.alert('Faltan datos')
+                    } else {
+                        if (window.confirm('Enviar solicitud de registro?')) {
+                            $.post(
+                                "/api/v1/users",
+                                $("form").serialize(),
+                                null
+                            ).success(function (data) {
+                                window.location.reload()
+                            })
+                        }
+                    }
+                })
+                $("#cancelSignin").click(function () {
+                    window.location.reload()
+                })
+            }
+        })
+    }
+}
+
+function showProfile() {
+    $.ajax({
+        type: 'GET',
+        url: '/api/v1/users/' + JSON.parse(window.sessionStorage.getItem('usrData')).id,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
         success: function (data) {
-            $('#getUsers').html(JSON.stringify(data));
+            let user = data.user
+            $('nav').html(
+                '<input type="button" value="Inicio" onclick="readIndex();">'
+            )
+            $('main').html(
+                '<section style="border-style: solid; width: 40%; margin-left: 30%">' +
+                '<form id="form-profile">' +
+                '<label>Usuario: ' + user.username + '</label><br><br>' +
+                '<label>Nombre: ' + user.name + '</label><br><br>' +
+                '<label>Fecha de nacimiento: ' + user.birthDate + '</label><br><br>' +
+                '<label>Email: ' + user.email + '</label><br>' +
+                '<input type="button" id="editProfile" name="editProfile" value="Editar"">' +
+                '<input type="button" id="changePasswd" name="changePasswd" value="Cambiar contraseña">' +
+                '</form>' +
+                '</section>'
+            )
+            $('#editProfile').click(editProfile)
+            $('#changePasswd').click(editPassword)
+        }
+    })
+}
+
+function editProfile() {
+    $.ajax({
+        type: 'GET',
+        url: '/api/v1/users/' + JSON.parse(window.sessionStorage.getItem('usrData')).id,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data, statusText, request) {
+            let user = data.user
+            $('main').html(
+                '<section style="border-style: solid; width: 40%; margin-left: 30%">' +
+                '<form id="form-profile">' +
+                '<label>Usuario: ' + user.username + '</label><br><br>' +
+                '<label for="name">Nombre: </label>' +
+                '<input type="text" id="name" name="name" value="' + user.name + '"><br><br>' +
+                '<label for="birthDate">Fecha de nacimiento: </label>' +
+                '<input type="date" id="birthDate" name="birthDate" value="' + user.birthDate + '"><br><br>' +
+                '<label for="email">Email: </label>' +
+                '<input type="text" id="email" name="email" value="' + user.email + '"><br>' +
+                '<input type="button" id="saveProfile" name="saveProfile" value="Guardar">' +
+                '</form>' +
+                '</section>'
+            )
+            $('#saveProfile').click(function () {
+                    $.ajax({
+                        type: 'PUT',
+                        url: '/api/v1/users/' + user.id,
+                        headers: {
+                            "Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token,
+                            "If-Match": request.getResponseHeader('etag')
+                        },
+                        data: $('#form-profile').serialize(),
+                        success: function () {
+                            showProfile()
+                        }
+                    })
+                }
+            )
+        }
+    })
+}
+
+function editPassword() {
+    $.ajax({
+        type: 'GET',
+        url: '/api/v1/users/' + JSON.parse(window.sessionStorage.getItem('usrData')).id,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data, statusText, request) {
+            let user = data.user
+            $('nav').append('<input type="button" id="cancel-editpasswd" value="Cancelar">')
+            $('main').html(
+                '<section style="border-style: solid; width: 40%; margin-left: 30%">' +
+                '<form id="form-profile">' +
+                '<label>Contraseña actual </label>' +
+                '<input type="password" id="password" name="password"><br>' +
+                '<label>Nueva contraseña </label>' +
+                '<input type="password" id="newPasswd"><br>' +
+                '<input type="button" id="savePasswd" value="Guardar">' +
+                '</form>' +
+                '</section>'
+            )
+            $('#cancel-editpasswd').click(function () {
+                showProfile()
+            })
+            $('#savePasswd').click(function () {
+                let data = {
+                    "username": user.username,
+                    "password": $('#password').val()
+                }
+                $.post(
+                    "/access_token",
+                    data,
+                    null
+                ).success(function () {
+                    if ($('#newPasswd').val() === '') {
+                        window.alert('Introduce una nueva contraseña')
+                    } else {
+                        if (window.confirm('Cambiar la contraseña actual?')) {
+                            $.ajax({
+                                type: 'PUT',
+                                url: '/api/v1/users/' + user.id,
+                                headers: {
+                                    "Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token,
+                                    "If-Match": request.getResponseHeader('etag')
+                                },
+                                data: {"password": $('#newPasswd').val()},
+                                success: function () {
+                                    showProfile()
+                                }
+                            })
+                        }
+                    }
+                })
+            })
         }
     })
 }

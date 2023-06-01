@@ -65,13 +65,13 @@ class LoginController
         }
 
 
-        if ($user->getEstado()->value == Estado::UNAUTHORIZED->value) { //
+        if (($user->getEstado()->value == Estado::UNAUTHORIZED->value) || ($user->getEstado()->value == Estado::INACTIVE->value)) { //
             return Error::createResponse(
                 $response,
                 StatusCode::STATUS_FORBIDDEN,
                 [
                     'error' => 'unauthorized_user',
-                    'error_description' => 'User´s state is unauthorized'
+                    'error_description' => 'This user is '.$user->getEstado()->value
                 ]
             );
         }
