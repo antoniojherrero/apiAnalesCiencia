@@ -76,7 +76,12 @@ class UpdateCommand
             }
             $user->setUsername($req_data['username']);
         }
-
+        if(isset($req_data['name'])){
+            $user->setName($req_data['name']);
+        }
+        if (isset($req_data['birthDate'])){
+            $user->setBirthDate(new \DateTime($req_data['birthDate']));
+        }
         if (isset($req_data['email'])) {
             $usuarioId = $this->findIdBy('email', $req_data['email']);
             if ($usuarioId && intval($args['userId']) !== $usuarioId) {
@@ -96,6 +101,15 @@ class UpdateCommand
             try {
                 $user->setRole($req_data['role']);
             } catch (Throwable) {    // 400 BAD_REQUEST: unexpected role
+                return Error::createResponse($response, StatusCode::STATUS_BAD_REQUEST);
+            }
+        }
+
+        // estado
+        if($isWriter && isset($req_data['estado'])){
+            try{
+                $user->setEstado($req_data['estado']);
+            } catch (Throwable){
                 return Error::createResponse($response, StatusCode::STATUS_BAD_REQUEST);
             }
         }

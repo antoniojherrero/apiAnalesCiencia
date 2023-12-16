@@ -9,6 +9,7 @@
 
 namespace TDW\ACiencia\Entity;
 
+use DateTime;
 use Doctrine\ORM\Mapping as ORM;
 use InvalidArgumentException;
 use JetBrains\PhpStorm\ArrayShape;
@@ -39,6 +40,21 @@ class User implements JsonSerializable, Stringable
     protected string $username;
 
     #[ORM\Column(
+        name: "name",
+        type: "string",
+        length: 32,
+        nullable: false
+    )]
+    protected string $name;
+
+    #[ORM\Column(
+        name: "birthdate",
+        type: "datetime",
+        nullable: true
+    )]
+    protected DateTime | null $birthDate = null;
+
+    #[ORM\Column(
         name: "email",
         type: "string",
         length: 60,
@@ -64,27 +80,43 @@ class User implements JsonSerializable, Stringable
     )]
     protected Role $role;
 
+    #[ORM\Column(
+        name: "estado",
+        type: "string",
+        length: 15,
+        nullable: false,
+        enumType: Estado::class
+    )]
+    protected Estado $estado;
     /**
      * User constructor.
      *
      * @param string $username username
+     * @param string $name name
+     * @param DateTime|null $birthDate birthDate
      * @param string $email email
      * @param string $password password
      * @param Role|string $role Role::*
-     *
+     * @param Estado|string $estado Estado::*
      * @throws InvalidArgumentException
      */
     public function __construct(
         string $username = '',
+        string $name = '',
+        ?DateTime $birthDate = null,
         string $email = '',
         string $password = '',
-        Role|string $role = Role::READER
+        Role|string $role = Role::READER,
+        Estado|string $estado = Estado::UNAUTHORIZED
     ) {
         $this->id       = 0;
         $this->username = $username;
+        $this->name     = $name;
+        $this->birthDate= $birthDate;
         $this->email    = $email;
         $this->setPassword($password);
         $this->setRole($role);
+        $this->estado=$estado;
     }
 
     /**
@@ -114,6 +146,38 @@ class User implements JsonSerializable, Stringable
     public function setUsername(string $username): void
     {
         $this->username = $username;
+    }
+
+    /**
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * @param string $name
+     */
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+    }
+
+    /**
+     * @return DateTime|null
+     */
+    public function getBirthDate(): ?DateTime
+    {
+        return $this->birthDate;
+    }
+
+    /**
+     * @param DateTime|null $birthDate
+     */
+    public function setBirthDate(?DateTime $birthDate): void
+    {
+        $this->birthDate = $birthDate;
     }
 
     /**
@@ -212,16 +276,43 @@ class User implements JsonSerializable, Stringable
         return password_verify($password, $this->password_hash);
     }
 
+    /**
+     * @return Estado
+     */
+    public function getEstado(): Estado
+    {
+        return $this->estado;
+    }
+
+    /**
+     * @param Estado|string $estado
+     */
+    public function setEstado(Estado|string $estado): void
+    {
+        try {
+            $this->estado = ($estado instanceof Estado)
+                ? $estado
+                : Estado::from(strtolower($estado));
+        } catch (ValueError) {
+            throw new InvalidArgumentException('Invalid "Estado"');
+        }
+    }
+
+
+
     public function __toString(): string
     {
         return
             sprintf(
-                '[%s: (id=%04d, username="%s", email="%s", role="%s")]',
+                '[%s: (id=%04d, username="%s", name="%s", birthDate="%s", email="%s", role="%s", estado="%s")]',
                 basename(self::class),
                 $this->getId(),
                 $this->getUsername(),
+                $this->getBirthDate()?->format('Y-m-d'),
+                $this->getName(),
                 $this->getEmail(),
                 $this->role->name,
+                $this->estado->value
             );
     }
 
@@ -235,8 +326,12 @@ class User implements JsonSerializable, Stringable
             'user' => [
                 'id' => $this->getId(),
                 'username' => $this->getUsername(),
+                'name' => $this->getName(),
+                'birthDate' => $this->getBirthDate()?->format('Y-m-d'),
                 'email' => $this->getEmail(),
+                'password' => $this->getPassword(),
                 'role' => $this->role->name,
+                'estado' => $this->estado->value,
             ]
         ];
     }

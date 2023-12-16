@@ -39,16 +39,15 @@ class CreateCommand
      */
     public function __invoke(Request $request, Response $response): Response
     {
-        if (!$this->checkWriterScope($request)) { // 403
+        /*if (!$this->checkWriterScope($request)) { // 403
             return Error::createResponse($response, StatusCode::STATUS_FORBIDDEN);
-        }
+        }*/
 
         $req_data = $request->getParsedBody() ?? [];
 
         if (!isset($req_data['username'], $req_data['email'], $req_data['password'])) { // 422 - Faltan datos
             return Error::createResponse($response, StatusCode::STATUS_UNPROCESSABLE_ENTITY);
         }
-
         // hay datos -> procesarlos
         $criteria = new Criteria();
         $criteria
@@ -63,6 +62,8 @@ class CreateCommand
         try {
             $user = new User(
                 $req_data['username'],
+                $req_data['name'],
+                new \DateTime($req_data['birthDate']),
                 $req_data['email'],
                 $req_data['password'],
                 $req_data['role'] ?? Role::READER

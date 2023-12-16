@@ -1,685 +1,1402 @@
 let writer = false
+let username = ''
 
-let products = []
-let people = []
-let entities = []
+function getProducts() {
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/products',
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            for (prod in data.products) {
+                let elem = data.products[prod].product
+                $('#productos').append(
+                    '<tr id="' + elem.id + '">' +
+                    '<td><img src="' + elem.imageUrl + '" width="25" height="25" alt=""></td>' +
+                    '<td class="elemName" onclick="readProduct(this);">' + elem.name + '</td>' +
+                    (writer ? '<td><input type="button" name="' + elem.name + '" value="Editar" onclick="updateProduct(this);"></td><td><input type="button" name="' + elem.name + '" value="Eliminar" onclick="deleteProduct(this);"></td>' : '') +
+                    '</tr>'
+                )
+            }
+        },
+        error: function (jqXHR) {
+            if (jqXHR.status === 404) {
+                $('#products').append('<tr><td>(Vacio)</td></tr>')
+            }
+        }
+    })
+    if (writer) {
+        $('#prodSection').append(
+            '<form>' +
+            '<input type="button" id="createProduct" value="Crear" onclick="crearProducto();">' +
+            '</form>'
+        )
+    }
+}
 
-if(window.sessionStorage.getItem('writer')){ writer=JSON.parse(window.sessionStorage.getItem('writer'))}
-if(window.localStorage.getItem('products')){ products=JSON.parse(window.localStorage.getItem('products')) }
-if(window.localStorage.getItem('people'))  { people=JSON.parse(window.localStorage.getItem('people')) }
-if(window.localStorage.getItem('entities')){ entities=JSON.parse(window.localStorage.getItem('entities')) }
+function getPersons() {
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/persons',
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            for (person in data.persons) {
+                let elem = data.persons[person].person
+                $('#personas').append(
+                    '<tr id="' + elem.id + '">' +
+                    '<td><img src="' + elem.imageUrl + '" width="25" height="25" alt=""></td>' +
+                    '<td class="elemName" onclick="readPerson(this);">' + elem.name + '</td>' +
+                    (writer ? '<td><input type="button" name="' + elem.name + '" value="Editar" onclick="updatePerson(this);"></td><td><input type="button" name="' + elem.name + '" value="Eliminar" onclick="deletePerson(this);"></td>' : '') +
+                    '</tr>'
+                )
+            }
+        },
+        error: function (jqXHR) {
+            if (jqXHR.status === 404) {
+                $('#personas').append('<tr><td>(Vacio)</td></tr>')
+            }
+        }
+    })
+    if (writer) {
+        $('#perSection').append(
+            '<form>' +
+            '<input type="button" id="createPerson" value="Crear" onclick="crearPersona();">' +
+            '</form>'
+        )
+    }
+}
 
-function buildDataSection(data,title){
+function getEntities() {
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/entities',
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            for (entity in data.entities) {
+                let elem = data.entities[entity].entity
+                $('#entidades').append(
+                    '<tr id="' + elem.id + '">' +
+                    '<td><img src="' + elem.imageUrl + '" width="25" height="25" alt=""></td>' +
+                    '<td class="elemName" onclick="readEntity(this);">' + elem.name + '</td>' +
+                    (writer ? '<td><input type="button" name="' + elem.name + '" value="Editar" onclick="updateEntity(this);"></td><td><input type="button" name="' + elem.name + '" value="Eliminar" onclick="deleteEntity(this);"></td>' : '') +
+                    '</tr>'
+                )
+            }
+        },
+        error: function (jqXHR) {
+            if (jqXHR.status === 404) {
+                $('#entidades').append('<tr><td>(Vacio)</td></tr>')
+            }
+        }
+    })
+    if (writer) {
+        $('#etySection').append(
+            '<form>' +
+            '<input type="button" id="createEntity" value="Crear" onclick="crearEntidad();">' +
+            '</form>'
+        )
+    }
+}
+
+function readIndex() {
+    writer = JSON.parse(window.sessionStorage.getItem('writer'))
+    username = JSON.parse(window.sessionStorage.getItem('usrData')).username
+    let navForm = document.createElement('form')
+    navForm.innerHTML = '<label for="username">Perfil: </label>'
+    navForm.innerHTML += '<input type="button" id="username" value="' + username + '" onclick="showProfile();"/> '
+    navForm.innerHTML += '<input type="button" id="logout" value="Cerrar Sesión" onclick="LogOut();"/>'
+    navForm.innerHTML += (writer ? '<input style="float: right" type="button" id="userMgmt" value="Usuarios" onclick="getUsers();"/>' : '')
+    let nav = document.getElementsByTagName('nav')[0]
+    nav.innerHTML = ''
+    nav.appendChild(navForm)
+
+
+    let main = document.getElementsByTagName('main')[0]
+    main.innerHTML = ''
+    main.innerHTML += '<section id="prodSection">' +
+        '<table>' +
+        '<caption>Productos</caption>' +
+        '<tbody id="productos"></tbody>' +
+        '</table>' +
+        '</section>'
+    main.innerHTML += '<section id="perSection">' +
+        '<table>' +
+        '<caption>Personas</caption>' +
+        '<tbody id="personas"></tbody>' +
+        '</table>' +
+        '</section>'
+    main.innerHTML += '<section id="etySection">' +
+        '<table>' +
+        '<caption>Entidades</caption>' +
+        '<tbody id="entidades"></tbody>' +
+        '</table>' +
+        '</section>'
+
+    getProducts()
+    getPersons()
+    getEntities()
+}
+
+function LogInAjax() {
+    let authHeader = null;
+
+    $.post(
+        "/access_token",
+        $("#form-login").serialize(),
+        null
+    ).success(function (data, textStatus, request) {
+        // => show scopes, users, products, ...
+        authHeader = request.getResponseHeader('Authorization');
+        let token = authHeader.split(' ')[1];   // Elimina 'Bearer '
+        let usrData = JSON.parse(atob(token.split('.')[1]));
+
+        if (usrData.scopes.length === 2) {
+            window.sessionStorage.setItem('writer', true)
+        } else {
+            window.sessionStorage.setItem('writer', false)
+        }
+
+        data.id = usrData.uid
+        data.username = usrData.sub
+
+        window.sessionStorage.setItem('usrData', JSON.stringify(data))
+        readIndex()
+        console.log(data)
+
+    }).fail(function (xhr) {
+        let message
+        if (xhr.responseJSON && xhr.responseJSON.error_description) {
+            message = xhr.responseJSON.error_description;
+        }
+        alert("Error! \n" + message)
+    });
+}
+
+function LogOut() {
+    if (window.confirm('Cerrar la sesión de ' + username + ' ?')) {
+        window.sessionStorage.clear()
+        window.location.reload()
+    }
+}
+
+function readElement(elemento) {
+    let nav = document.getElementsByTagName('nav')[0]
+    nav.innerHTML = ''
+    nav.innerHTML = '<input type="button" name="inicio" value="Inicio" onclick="readIndex();">'
+
+    let main = document.getElementsByTagName('main')[0]
+    let birthday = new Date(elemento.birthDate)
+    let deathday = new Date(elemento.deathDate)
+    death = !deathday ? '<h3>Fallecimiento: ' + deathday.getUTCDate() + ' de ' + (deathday.toLocaleString('default', {month: 'long'})) + ' de ' + deathday.getFullYear() + '</h3>' : ''
+    main.innerHTML = ''
+    main.innerHTML =
+        '<section style="width: 40%;">' +
+        '<h2>' + elemento.name + '</h2>' +
+        '<h3>Nacimiento: ' + birthday.getUTCDate() + ' de ' + birthday.toLocaleString('default', {month: 'long'}) + ' de ' + birthday.getFullYear() + '</h3>' +
+        death +
+        '<img src="' + elemento.imageUrl + '" alt="' + elemento.name + '" width="300" height="250">' +
+        '<div><table id="productos" style="margin: 0px;">' +
+        '</table>' +
+        '<table id="entidades" style="margin: 0px;">' +
+        '</table></div>' +
+        '</section>'
+    main.innerHTML += '<section style="width: 60%;"><iframe src="' + ((elemento.wikiUrl) ? elemento.wikiUrl : "") + '"  width=700 height=500></section>'
+
+}
+
+function printRelatedProducts(data) {
+    if (data.products.length !== 0) {
+        for (prod in data.products) {
+            let elem = data.products[prod].product
+            $('#relProducts').append(
+                '<tr id="' + elem.id + '">' +
+                '<td><img src="' + elem.imageUrl + '" height="30" width="30"></td>' +
+                '<td class="elemName" onclick="readProduct(this)">' + elem.name + '</td>' +
+                '</tr>')
+        }
+    } else {
+        $('#relProducts').append('<tr><td>(Vacio)</td></tr>')
+    }
+}
+
+function printRelatedPersons(data) {
+    if (data.persons.length !== 0) {
+        for (person in data.persons) {
+            let elem = data.persons[person].person
+            $('#relPersons').append(
+                '<tr id="' + elem.id + '">' +
+                '<td><img src="' + elem.imageUrl + '" height="30" width="30"></td>' +
+                '<td class="elemName" onclick="readPerson(this)">' + elem.name + '</td>' +
+                '</tr>')
+        }
+    } else {
+        $('#relPersons').append('<tr><td>(Vacio)</td></tr>')
+    }
+}
+
+function printRelatedEntities(data) {
+    if (data.entities.length !== 0) {
+        for (entity in data.entities) {
+            let elem = data.entities[entity].entity
+            $('#relEntities').append(
+                '<tr id="' + elem.id + '">' +
+                '<td><img src="' + elem.imageUrl + '" height="30" width="30"></td>' +
+                '<td class="elemName" onclick="readEntity(this)">' + elem.name + '</td>' +
+                '</tr>')
+        }
+    } else {
+        $('#relEntities').append('<tr><td>(Vacio)</td></tr>')
+    }
+}
+
+function readProduct(elem) {
+    let elementoId = elem.parentElement.id
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/products/' + elementoId,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data) {
+            readElement(data.product)
+            $('main').append('<footer style="float: left">' +
+                '<table style="float: left; width=50%;">' +
+                '<caption>Personas relacionadas</caption><tbody id="relPersons"></tbody>' +
+                '</table>' +
+                '<table style="float: left; width: 50%;">' +
+                '<caption>Entidades relacionadas</caption><tbody id="relEntities"></tbody>' +
+                '</table>' +
+                '</footer>')
+        }
+    })
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/products/' + elementoId + '/persons',
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data) {
+            printRelatedPersons(data)
+        }
+    })
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/products/' + elementoId + '/entities',
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data) {
+            printRelatedEntities(data)
+        }
+    })
+}
+
+function readPerson(elem) {
+    let elementoId = elem.parentElement.id
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/persons/' + elementoId,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data) {
+            readElement(data.person)
+            $('main').append('<footer style="float: left">' +
+                '<table style="float: left; width=50%;">' +
+                '<caption>Productos relacionados</caption><tbody id="relProducts"></tbody>' +
+                '</table>' +
+                '<table style="float: left; width: 50%;">' +
+                '<caption>Entidades relacionadas</caption><tbody id="relEntities"></tbody>' +
+                '</table>' +
+                '</footer>')
+        }
+    })
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/persons/' + elementoId + '/products',
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data) {
+            printRelatedProducts(data)
+        }
+    })
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/persons/' + elementoId + '/entities',
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data) {
+            printRelatedEntities(data)
+        }
+    })
+}
+
+function readEntity(elem) {
+    let elementoId = elem.parentElement.id
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/entities/' + elementoId,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data) {
+            readElement(data.entity)
+            $('main').append('<footer style="float: left">' +
+                '<table style="float: left; width=50%;">' +
+                '<caption>Personas relacionadas</caption><tbody id="relPersons"></tbody>' +
+                '</table>' +
+                '<table style="float: left; width: 50%;">' +
+                '<caption>Productos relacionados</caption><tbody id="relProducts"></tbody>' +
+                '</table>' +
+                '</footer>')
+        }
+    })
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/entities/' + elementoId + '/persons',
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data) {
+            printRelatedPersons(data)
+        }
+    })
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/entities/' + elementoId + '/products',
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data) {
+            printRelatedProducts(data)
+        }
+    })
+}
+
+function create(title) {
+    let nav = document.getElementsByTagName('nav')[0]
+    nav.innerHTML = ''
+    nav.innerHTML = '<input type="button" name="cancel" value="Cancel" onclick="readIndex();">'
+    let main = document.getElementsByTagName('main')[0]
+    main.innerHTML = ''
     let section = document.createElement('section')
-    section.innerHTML='<table></table>'
-    
-    let caption = document.createElement('caption')
-    caption.appendChild(document.createTextNode(title))
-    let tbody = document.createElement('tbody')
-    tbody.setAttribute('id', title.toLowerCase())
-    if(data.length==0){
-        let tabla = section.getElementsByTagName('table')[0]
-        let row = document.createElement('tr')
-        let td = document.createElement('td')
-        td.appendChild(document.createTextNode('(Vacio)'))
-        row.appendChild(td)
-        tbody.appendChild(row)
-        tabla.appendChild(caption)
-        tabla.appendChild(tbody)
-        section.appendChild(tabla)
-    }
-    else{
-        for(let i = 0; i<data.length;i++){
-            let row = document.createElement('tr')
-            row.setAttribute('id', i)
-            let tableData = document.createElement('td')
-            
-            let image = document.createElement('img')
-            image.setAttribute("src", data[i].image)
-            image.setAttribute("width", 25)
-            image.setAttribute("height", 25)
-            tableData.appendChild(image)
-            row.appendChild(tableData)
+    section.style.width = '25%'
+    section.style.maxWidth = '50%'
+    section.style.marginLeft = '37.5%'
+    section.style.textAlign = 'center'
+    section.style.borderStyle = 'solid'
+    section.style.borderWidth = 'medium'
 
-            tableData = document.createElement('td')
-            tableData.setAttribute('class', 'elemName')
-            
-            if(data == products){ tableData.addEventListener('click',readProduct) }
-            if(data == people){ tableData.addEventListener('click',readPerson)}
-            if(data == entities){ tableData.addEventListener('click',readEntity)  }
+    section.innerHTML = '<form id="creationForm">' +
+        '<fieldset>' +
+        '<legend>Crear ' + title + '</legend>' +
+        '<label for="name">Nombre: </label>' +
+        '<input type="text" id="name" name="Name" value="" required><br><br>' +
+        '<label for="birth">Nacimiento: </label>' +
+        '<input type="date" id="birth" name="Birth" required><br><br>' +
+        '<label for="death">Fallecimiento: </label>' +
+        '<input type="date" id="death" name="Death"><br><br>' +
+        '<label for="image">URL Imagen: </label>' +
+        '<input type="url" id="image" name="Image" required><br><br>' +
+        '<label for="wiki">URL wiki: </label>' +
+        '<input type="url" id="wiki" name="Wiki" required><br><br>' +
+        '</fieldset>' +
+        '<input id="btn-enviar" type="submit" value="Enviar">' +
+        '</form>'
 
-            let name = document.createTextNode(data[i].name)
-            tableData.appendChild(name)
-            row.appendChild(tableData)
-
-            if(writer){
-                let formCell = document.createElement('td')
-                let deleteBtn = document.createElement('input')
-                deleteBtn.setAttribute('type','button')
-                deleteBtn.setAttribute('value', 'Eliminar')
-                let modifyBtn = document.createElement('input')
-                modifyBtn.setAttribute('type', 'button')
-                modifyBtn.setAttribute('value', 'Editar')
-                if(data == products){
-                    deleteBtn.addEventListener('click', deleteProduct)
-                    modifyBtn.addEventListener('click', updateProduct)
-                }
-                if(data == people){
-                    deleteBtn.addEventListener('click', deletePerson)
-                    modifyBtn.addEventListener('click', updatePerson)
-                }
-                if(data == entities){
-                    deleteBtn.addEventListener('click', deleteEntity)
-                    modifyBtn.addEventListener('click', updateEntity)
-                }
-                formCell.appendChild(modifyBtn)
-                formCell.appendChild(deleteBtn)
-                row.appendChild(formCell)
-            }
-
-            tbody.appendChild(row)
-        }
-        tabla = section.getElementsByTagName('table')[0]
-        tabla.appendChild(caption)
-        tabla.appendChild(tbody)
-    }
-
-    if(writer){
-        form = document.createElement('form')
-        if(data == products){
-            form.innerHTML='<input type="button" name="createProduct" value="Crear" onclick="crearProducto();">'
-        }
-        if(data == people){
-            form.innerHTML='<input type="button" name="createPerson" value="Crear" onclick="crearPersona();">'
-        }
-        if(data == entities){
-            form.innerHTML='<input type="button" name="createEntity" value="Crear" onclick="crearEntidad();">'
-        }
-        section.appendChild(form)
-    }
-    return section
-}
-
-function readIndex(){
-    let loginForm = document.createElement('login')
-    if(!writer){
-        loginForm.innerHTML = 
-        '<label for="user">Usuario</label> '+
-        '<input id="user" type="text" name="user"/> '+
-        '<label for="passwd">Contraseña</label> '+
-        '<input id="passwd" type="password" name="passwd"/> '+
-        '<input type="button" name="login" value="Iniciar Sesión" onclick="LogIn();"/>'
-    }
-    else{
-        loginForm.innerHTML = '<input type="button" name="logout" value="Cerrar Sesión" onclick="LogOut();"/>'
-    }
-    let nav = document.getElementsByTagName('nav')[0]
-    nav.innerHTML=''
-    nav.appendChild(loginForm)
-        
-    let main = document.getElementsByTagName('main')[0]
-    main.innerHTML=''
-    main.appendChild(buildDataSection(products,'Productos'))
-    main.appendChild(buildDataSection(people,'Personas'))
-    main.appendChild(buildDataSection(entities,'Entidades'))
-}
-
-function LogIn() {
-    let user = document.getElementById('user').value
-    let passwd = document.getElementById('passwd').value
-    let encontrado = false
-    usuarios = JSON.parse(window.localStorage.getItem('users'))
-    for(let usr in usuarios){
-      if((usr==user) && (usuarios[usr]==passwd)){
-        encontrado=true
-        break;
-      }
-    }
-    if(encontrado){
-      writer=true
-      window.sessionStorage.setItem('writer', writer)
-      readIndex()
-    }
-    else{
-      window.alert('Usuario o contraseña incorrectos')
-    }
-}
-
-function LogOut(){
-    writer=false
-    window.sessionStorage.setItem('writer', writer)
-    readIndex()
-}
-
-function readElement(elemento){
-    let nav = document.getElementsByTagName('nav')[0]
-    nav.innerHTML=''
-    nav.innerHTML='<input type="button" name="inicio" value="Inicio" onclick="readIndex();">'
-
-    let main = document.getElementsByTagName('main')[0]
-    let birthday = new Date(elemento.birth)
-    let deathday = new Date(elemento.death)
-    death = !(deathday == 'Invalid Date') ? '<h3>Fallecimiento: '+deathday.getUTCDate()+' de '+(deathday.toLocaleString('default', { month: 'long' }))+' de '+deathday.getFullYear()+'</h3>':''
-    main.innerHTML=''
-    main.innerHTML=
-    '<section style="width: 40%;">'+
-        '<h2>'+elemento.name+'</h2>'+
-        '<h3>Nacimiento: '+birthday.getUTCDate()+' de '+birthday.toLocaleString('default', { month: 'long' })+' de '+birthday.getFullYear()+'</h3>'+
-        death+
-        '<img src="'+elemento.image+'" alt="'+elemento.name+'" width="300" height="250">'+
-        '<div><table id="productos" style="margin: 0px;">'+
-        '</table>'+
-        '<table id="entidades" style="margin: 0px;">'+
-        '</table></div>'+
-    '</section>'
-    main.innerHTML+='<section style="width: 60%;"><iframe src="'+elemento.wiki+'" width=700 height=500></section>'
-
-}
-
-function readProduct(){
-    let elemento = products[this.parentElement.id]
-    
-    readElement(elemento)
-
-    let main = document.getElementsByTagName('main')[0]
-    let footer = document.createElement('footer')
-    let tablaPersonas = document.createElement('table')
-    let caption = document.createElement('caption')
-
-    footer.style.float='left'
-    tablaPersonas.style.margin="0px"
-    caption.innerHTML='Personas'
-    tablaPersonas.appendChild(caption)
-
-    let row = document.createElement('tr')
-    if(elemento.people.length!=0){
-        for(person of elemento.people){
-            for(let i = 0; i<people.length; i++){
-                if(person == people[i].id){
-                    let tableData = document.createElement('td')
-                    tableData.style.textAlign='center'
-                    tableData.setAttribute('id', i)
-                    let personImg = document.createElement('img')
-                    personImg.setAttribute('src', people[i].image)
-                    personImg.setAttribute('alt', people[i].name)
-                    personImg.setAttribute('title', people[i].name)
-                    personImg.setAttribute('width', 50)
-                    personImg.setAttribute('height', 50)
-                    personImg.addEventListener('click', readPerson)
-                    personImg.style.cursor = 'pointer'
-                    tableData.appendChild(personImg)
-                    row.appendChild(tableData)
-                    break
-                }
-            }
-        }
-    }
-    else{
-        row.innerHTML+='<td>(Vacío)</td>'
-    }
-    tablaPersonas.appendChild(row)
-    footer.appendChild(tablaPersonas)
-
-    let tablaEntidades = document.createElement('table')
-    tablaEntidades.style.margin='0px'
-    caption = document.createElement('caption')
-    caption.innerHTML='Entidades'
-    tablaEntidades.appendChild(caption)
-    row = document.createElement('tr')
-    if(elemento.entities.length!=0){
-        for(entity of elemento.entities){
-            for(let i = 0; i<entities.length; i++){
-                if(entity == entities[i].id){
-                    let tableData = document.createElement('td')
-                    tableData.style.textAlign='center'
-                    tableData.setAttribute('id', i)
-                    let img = document.createElement('img')
-                    img.setAttribute('src', entities[i].image)
-                    img.setAttribute('alt', entities[i].name)
-                    img.setAttribute('title', entities[i].name)
-                    img.setAttribute('width', 50)
-                    img.setAttribute('height', 50)
-                    img.addEventListener('click', readEntity)
-                    img.style.cursor = 'pointer'
-                    tableData.appendChild(img)
-                    row.appendChild(tableData)
-                    break
-                }
-            }
-        }
-    }
-    else{
-        row.innerHTML+='<td>(Vacío)</td>'
-    }
-    tablaEntidades.appendChild(row)
-    footer.appendChild(tablaEntidades)
-
-    main.appendChild(footer)
-}
-
-function readPerson(){
-    let elemento = people[this.parentElement.id]
-
-    readElement(elemento)
-}
-
-function readEntity(){
-    let elemento = entities[this.parentElement.id]
-
-    readElement(elemento)
-
-    let main = document.getElementsByTagName('main')[0]
-    let footer = document.createElement('footer')
-    footer.innerHTML='<h2 style="text-align: center;">Personas</h2>'
-    if(elemento.people.length!=0){
-        let i = 0
-        let tablaPersonas = document.createElement('table')
-        let row = document.createElement('tr')
-        for(person of elemento.people){
-            for(item of people){
-                if(person == item.id){
-                    let tableData = document.createElement('td')
-                    tableData.style.textAlign='center'
-                    tableData.setAttribute('id', i)
-                    let img = document.createElement('img')
-                    img.setAttribute('src', item.image)
-                    img.setAttribute('alt', item.name)
-                    img.setAttribute('title', item.name)
-                    img.setAttribute('width', 50)
-                    img.setAttribute('height', 50)
-                    img.addEventListener('click', readPerson)
-                    img.style.cursor = 'pointer'
-                    tableData.appendChild(img)
-                    row.appendChild(tableData)
-                    break
-                }
-                i+=1
-            }
-        }
-        tablaPersonas.appendChild(row)
-        footer.appendChild(tablaPersonas)
-    }
-    else{
-        footer.innerHTML+='<p>(Vacío)</p>'
-    }
-    main.appendChild(footer)
-}
-
-function create(title){
-    let nav = document.getElementsByTagName('nav')[0]
-    nav.innerHTML=''
-    nav.innerHTML='<input type="button" name="cancel" value="Cancel" onclick="readIndex();">'
-    let main = document.getElementsByTagName('main')[0]
-    main.innerHTML=''
-    let section = document.createElement('section')
-    section.style.width='25%'
-    section.style.maxWidth='50%'
-    section.style.marginLeft='37.5%'
-    section.style.textAlign='center'
-    section.style.borderStyle='solid'
-    section.style.borderWidth='medium'
-    let funcionSubmit=''
-    if(title==='Producto'){
-        funcionSubmit='editProduct(this);'
-    }
-    else if(title==='Persona'){
-        funcionSubmit='editPerson(this);'
-    }
-    else if(title==='Entidad'){
-        funcionSubmit='editEntity(this);'
-    }
-    section.innerHTML='<form id="creationForm" onsubmit="'+funcionSubmit+'">'+
-    '<fieldset>'+
-    '<legend>Crear '+title+'</legend>'+
-    '<label for="name">Nombre: </label>'+
-    '<input type="text" id="name" name="Name" value="" required><br><br>'+
-    '<label for="birth">Nacimiento: </label>'+
-    '<input type="date" id="birth" name="Birth" required><br><br>'+
-    '<label for="death">Fallecimiento: </label>'+
-    '<input type="date" id="death" name="Death"><br><br>'+
-    '<label for="image">URL Imagen: </label>'+
-    '<input type="url" id="image" name="Image" required><br><br>'+
-    '<label for="wiki">URL wiki: </label>'+
-    '<input type="url" id="wiki" name="Wiki" required><br><br>'+
-    '</fieldset>'+
-    '</form>'
-    
     main.appendChild(section)
 }
 
-function crearProducto(){
+function crearProducto() {
     create('Producto')
-    
-    let fieldset = document.getElementsByTagName('fieldset')[0]
 
-    fieldset.innerHTML+='<h3 style="text-align: left; color: yellow;">Participantes<h3>'
-    let peopleList = document.createElement('ul')
-    peopleList.setAttribute('id','peopleList')
-    for(person of people){
-        let listItem = document.createElement('li')
-        listItem.setAttribute('id', person.id)
-        let label = document.createElement('label')
-        label.setAttribute('for', person.id)
-        label.appendChild(document.createTextNode(person.name))
-        let checkbox = document.createElement('input')
-        checkbox.setAttribute('id', person.id)
-        checkbox.setAttribute('type','checkbox')
-        listItem.appendChild(label)
-        listItem.appendChild(checkbox)
-        peopleList.appendChild(listItem)
-    }
-    fieldset.appendChild(peopleList)
+    $('#creationForm').on('submit', () => {
+        editProduct()
+    })
 
-    fieldset.innerHTML+='<h3 style="text-align: left; color: yellow;">Entidades colaboradoras<h3>'
-    let entitiesList = document.createElement('ul')
-    entitiesList.setAttribute('id','entitiesList')
-    for(entity of entities){
-        let listItem = document.createElement('li')
-        listItem.setAttribute('id', entity.id)
-        let label = document.createElement('label')
-        label.setAttribute('for', entity.id)
-        label.appendChild(document.createTextNode(entity.name))
-        let checkbox = document.createElement('input')
-        checkbox.setAttribute('id', entity.id)
-        checkbox.setAttribute('type','checkbox')
-        listItem.appendChild(label)
-        listItem.appendChild(checkbox)
-        entitiesList.appendChild(listItem)
-    }
-    fieldset.appendChild(entitiesList)
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/persons',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.persons.length > 0) {
+                $('fieldset').append('<h3>Participantes</h3><ul id="peopleList"></ul>')
+                for (person in data.persons) {
+                    let elemento = data.persons[person].person
+                    $('#peopleList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox">' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
 
-    fieldset.innerHTML+='<input type="submit" value="Enviar";">'
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/entities',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.entities.length > 0) {
+                $('fieldset').append('<h3>Entidades colaboradoras</h3><ul id="entitiesList"></ul>')
+                for (entity in data.entities) {
+                    let elemento = data.entities[entity].entity
+                    $('#entitiesList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox">' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
 }
 
-function crearPersona(){
+function crearPersona() {
     create('Persona')
-    let fieldset = document.getElementsByTagName('fieldset')[0]
-    fieldset.innerHTML+='<input type="submit" value="Enviar";">'
+
+    $('#creationForm').on('submit', () => {
+        editPerson()
+    })
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/products',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.products.length > 0) {
+                $('fieldset').append('<h3>Productos</h3><ul id="productsList"></ul>')
+                for (product in data.products) {
+                    let elemento = data.products[product].product
+
+                    $('#productsList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox">' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/entities',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.entities.length > 0) {
+                $('fieldset').append('<h3>Entidades colaboradoras</h3><ul id="entitiesList"></ul>')
+                for (entity in data.entities) {
+                    let elemento = data.entities[entity].entity
+                    $('#entitiesList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox">' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
 }
 
-function crearEntidad(){
+function crearEntidad() {
     create('Entidad')
 
+    $('#creationForm').on('submit', () => {
+        editEntity()
+    })
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/products',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.products.length > 0) {
+                $('fieldset').append('<h3>Productos</h3><ul id="productsList"></ul>')
+                for (product in data.products) {
+                    let elemento = data.products[product].product
+
+                    $('#productsList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox">' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/persons',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.persons.length > 0) {
+                $('fieldset').append('<h3>Participantes</h3><ul id="peopleList"></ul>')
+                for (person in data.persons) {
+                    let elemento = data.persons[person].person
+                    $('#peopleList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox">' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
+}
+
+function editRelatedProducts(relatedTo, elem, productsList) {
+    let add = (id) => {
+        $.ajax({
+            type: "PUT",
+            url: '/api/v1/' + relatedTo + '/' + elem.id + '/products/add/' + id,
+            async: false,
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        })
+    }
+    let rem = (id) => {
+        $.ajax({
+            type: "PUT",
+            url: '/api/v1/' + relatedTo + '/' + elem.id + '/products/rem/' + id,
+            async: false,
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        })
+    }
+    for (item of productsList.getElementsByTagName('li')) {
+        if (!elem.products) {
+            if (item.getElementsByTagName('input')[0].checked) {
+                add(item.id)
+            }
+        } else {
+            if (item.getElementsByTagName('input')[0].checked && !elem.products.includes(+item.id)) {
+                add(item.id)
+            } else if (!item.getElementsByTagName('input')[0].checked && elem.products.includes(+item.id)) {
+                rem(item.id)
+            }
+        }
+    }
+}
+
+function editRelatedPersons(relatedTo, elem, peopleList) {
+    let add = (id) => {
+        $.ajax({
+            type: "PUT",
+            url: '/api/v1/' + relatedTo + '/' + elem.id + '/persons/add/' + id,
+            async: false,
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        })
+    }
+    let rem = (id) => {
+        $.ajax({
+            type: "PUT",
+            url: '/api/v1/' + relatedTo + '/' + elem.id + '/persons/rem/' + id,
+            async: false,
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        })
+    }
+    for (item of peopleList.getElementsByTagName('li')) {
+        if (!elem.persons) {
+            if (item.getElementsByTagName('input')[0].checked) {
+                add(item.id)
+            }
+        } else {
+            if (item.getElementsByTagName('input')[0].checked && !elem.persons.includes(+item.id)) {
+                add(item.id)
+            } else if (!item.getElementsByTagName('input')[0].checked && elem.persons.includes(+item.id)) {
+                rem(item.id)
+            }
+        }
+    }
+}
+
+function editRelatedEntities(relatedTo, elem, entitiesList) {
+    let add = (id) => {
+        $.ajax({
+            type: "PUT",
+            url: '/api/v1/' + relatedTo + '/' + elem.id + '/entities/add/' + id,
+            async: false,
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        })
+    }
+    let rem = (id) => {
+        $.ajax({
+            type: "PUT",
+            url: '/api/v1/' + relatedTo + '/' + elem.id + '/entities/rem/' + id,
+            async: false,
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        })
+    }
+    for (item of entitiesList.getElementsByTagName('li')) {
+        if (!elem.entities) {
+            if (item.getElementsByTagName('input')[0].checked && !elem.entities) {
+                add(item.id)
+            }
+        } else {
+            if (item.getElementsByTagName('input')[0].checked && !elem.entities.includes(+item.id)) {
+                add(item.id)
+            } else if (!item.getElementsByTagName('input')[0].checked && elem.entities.includes(+item.id)) {
+                rem(item.id)
+            }
+        }
+    }
+}
+
+function editProduct(etag = null) {
     let fieldset = document.getElementsByTagName('fieldset')[0]
-
-    fieldset.innerHTML+='<h3 style="text-align: left; color: yellow;">Participantes<h3>'
-    let peopleList = document.createElement('ul')
-    peopleList.setAttribute('id','peopleList')
-    for(person of people){
-        let listItem = document.createElement('li')
-        listItem.setAttribute('id', person.id)
-        let label = document.createElement('label')
-        label.setAttribute('for', person.id)
-        label.appendChild(document.createTextNode(person.name))
-        let checkbox = document.createElement('input')
-        checkbox.setAttribute('id', person.id)
-        checkbox.setAttribute('type','checkbox')
-        listItem.appendChild(label)
-        listItem.appendChild(checkbox)
-        peopleList.appendChild(listItem)
-    }
-    fieldset.appendChild(peopleList)
-
-    fieldset.innerHTML+='<input type="submit" value="Enviar";">'
-}
-
-function editProduct(form){
-    let fieldset=form.getElementsByTagName('fieldset')[0]
     let peopleList = document.getElementById('peopleList')
-    let checkedPeople = []
-    for(item of peopleList.getElementsByTagName('li')){
-        if(item.getElementsByTagName('input')[0].checked){
-            checkedPeople[checkedPeople.length]= +item.id
-        }
-    }
     let entitiesList = document.getElementById('entitiesList')
-    let checkedEntities = []
-    for(item of entitiesList.getElementsByTagName('li')){
-        if(item.getElementsByTagName('input')[0].checked){
-            checkedEntities[checkedEntities.length]= +item.id
-        }
-    }
+
     let producto = {
-        id: Math.floor(Math.random()*Date.now()/100000000),
         name: fieldset.getElementsByTagName('input')[0].value,
-        birth: fieldset.getElementsByTagName('input')[1].value,
-        death: fieldset.getElementsByTagName('input')[2].value,
-        image: fieldset.getElementsByTagName('input')[3].value,
-        wiki: fieldset.getElementsByTagName('input')[4].value,
-        people: checkedPeople,
-        entities: checkedEntities
+        birthDate: fieldset.getElementsByTagName('input')[1].value,
+        deathDate: fieldset.getElementsByTagName('input')[2].value,
+        imageUrl: fieldset.getElementsByTagName('input')[3].value,
+        wikiUrl: fieldset.getElementsByTagName('input')[4].value,
     }
-    if(fieldset.id){
-        producto.id=products[+fieldset.id].id
-        products[+fieldset.id] = producto
+
+    if (etag) {
+        $.ajax({
+            type: "PUT",
+            url: '/api/v1/products/' + fieldset.id,
+            async: false,
+            headers: {
+                "Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token,
+                "if-match": etag
+            },
+            data: producto,
+            // dataType: 'json',
+            success: function (data) {
+                editRelatedPersons('products', data.product, peopleList)
+                editRelatedEntities('products', data.product, entitiesList)
+            }
+        })
+
+    } else {
+        $.ajax({
+            type: "POST",
+            url: '/api/v1/products',
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+            data: producto,
+            // dataType: 'json',
+            success: function (data) {
+                editRelatedPersons('products', data.product, peopleList)
+                editRelatedEntities('products', data.product, entitiesList)
+            }
+        })
     }
-    else{
-        products[products.length] = producto
-    }
-    window.localStorage.setItem('products', JSON.stringify(products))
+    readIndex()
 }
 
-function editPerson(form){
-    let fieldset=form.getElementsByTagName('fieldset')[0]
-    persona = {
-        id: Math.floor(Math.random()*Date.now()/100000000),
+function editPerson(etag = null) {
+    let fieldset = document.getElementsByTagName('fieldset')[0]
+    let productsList = document.getElementById('productsList')
+    let entitiesList = document.getElementById('entitiesList')
+
+    let persona = {
         name: fieldset.getElementsByTagName('input')[0].value,
-        birth: fieldset.getElementsByTagName('input')[1].value,
-        death: fieldset.getElementsByTagName('input')[2].value,
-        image: fieldset.getElementsByTagName('input')[3].value,
-        wiki: fieldset.getElementsByTagName('input')[4].value,
+        birthDate: fieldset.getElementsByTagName('input')[1].value,
+        deathDate: fieldset.getElementsByTagName('input')[2].value,
+        imageUrl: fieldset.getElementsByTagName('input')[3].value,
+        wikiUrl: fieldset.getElementsByTagName('input')[4].value,
     }
-    if(fieldset.id){
-        persona.id=people[+fieldset.id].id
-        people[+fieldset.id] = persona
+
+    if (etag) {
+        $.ajax({
+            type: "PUT",
+            url: '/api/v1/persons/' + fieldset.id,
+            async: false,
+            headers: {
+                "Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token,
+                "if-match": etag
+            },
+            data: persona,
+            // dataType: 'json',
+            success: function (data) {
+                editRelatedProducts('persons', data.person, productsList)
+                editRelatedEntities('persons', data.person, entitiesList)
+            }
+        })
+    } else {
+        $.ajax({
+            type: "POST",
+            url: '/api/v1/persons',
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+            data: persona,
+            // dataType: 'json',
+            success: function (data) {
+                editRelatedProducts('persons', data.person, productsList)
+                editRelatedEntities('persons', data.person, entitiesList)
+            }
+        })
     }
-    else{
-        people[people.length] = persona
-    }
-    window.localStorage.setItem('people', JSON.stringify(people))
+    readIndex()
 }
 
-function editEntity(form){
-    let fieldset=form.getElementsByTagName('fieldset')[0]
+function editEntity(etag = null) {
+    let fieldset = document.getElementsByTagName('fieldset')[0]
+    let productsList = document.getElementById('productsList')
     let peopleList = document.getElementById('peopleList')
-    let checkedPeople = []
-    for(item of peopleList.getElementsByTagName('li')){
-        if(item.getElementsByTagName('input')[0].checked){
-            checkedPeople[checkedPeople.length]= +item.id
-        }
-    }
-    entidad = {
-        id: entities[entities.length-1].id+1,
+
+    let entidad = {
         name: fieldset.getElementsByTagName('input')[0].value,
-        birth: fieldset.getElementsByTagName('input')[1].value,
-        death: fieldset.getElementsByTagName('input')[2].value,
-        image: fieldset.getElementsByTagName('input')[3].value,
-        wiki: fieldset.getElementsByTagName('input')[4].value,
-        people: checkedPeople,
+        birthDate: fieldset.getElementsByTagName('input')[1].value,
+        deathDate: fieldset.getElementsByTagName('input')[2].value,
+        imageUrl: fieldset.getElementsByTagName('input')[3].value,
+        wikiUrl: fieldset.getElementsByTagName('input')[4].value,
     }
-    if(fieldset.id){
-        entidad.id=entities[+fieldset.id].id
-        entities[+fieldset.id] = entidad
-    }
-    else{
-        entities[people.length] = entidad
-    }
-    window.localStorage.setItem('entities', JSON.stringify(entities))
-}
-
-function deleteProduct(){
-    let indice = +this.parentElement.parentElement.id
-    
-    if(window.confirm('Eliminar definitivamente el producto: '+products[indice].name)){
-        delete products[indice]
-        products = products.filter(Boolean)
-        window.localStorage.setItem('products', JSON.stringify(products))
-    }
-    readIndex()
-}
-
-function deletePerson(){
-    let indice = +this.parentElement.parentElement.id
-    
-    if(window.confirm('Eliminar definitivamente la persona: '+people[indice].name)){
-        delete people[indice]
-        people = people.filter(Boolean)
-        window.localStorage.setItem('people', JSON.stringify(people))
-    }
-    readIndex()
-}
-function deleteEntity(){
-    let indice = +this.parentElement.parentElement.id
-    
-    if(window.confirm('Eliminar definitivamente la entidad: '+entities[indice].name)){
-        delete entities[indice]
-        entities = entities.filter(Boolean)
-        window.localStorage.setItem('entities', JSON.stringify(entities))
+    if (etag) {
+        $.ajax({
+            type: "PUT",
+            url: '/api/v1/entities/' + fieldset.id,
+            async: false,
+            headers: {
+                "Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token,
+                "if-match": etag
+            },
+            data: entidad,
+            // dataType: 'json',
+            success: function (data) {
+                editRelatedProducts('entities', data.entity, productsList)
+                editRelatedPersons('entities', data.entity, peopleList)
+            }
+        })
+    } else {
+        $.ajax({
+            type: "POST",
+            url: '/api/v1/entities',
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+            data: entidad,
+            // dataType: 'json',
+            success: function (data) {
+                editRelatedProducts('entities', data.entity, productsList)
+                editRelatedPersons('entities', data.entity, peopleList)
+            }
+        })
     }
     readIndex()
 }
 
-function update(elemento,type,indice){
+function deleteProduct(elem) {
+    let indice = elem.parentElement.parentElement.id
+
+    if (window.confirm('Eliminar definitivamente el producto: ' + elem.name)) {
+        $.ajax({
+            type: 'DELETE',
+            url: '/api/v1/products/' + indice,
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        })
+    }
+    readIndex()
+}
+
+function deletePerson(elem) {
+    let indice = elem.parentElement.parentElement.id
+
+    if (window.confirm('Eliminar definitivamente la persona: ' + elem.name)) {
+        $.ajax({
+            type: 'DELETE',
+            url: '/api/v1/persons/' + indice,
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        })
+    }
+    readIndex()
+}
+
+function deleteEntity(elem) {
+    let indice = elem.parentElement.parentElement.id
+
+    if (window.confirm('Eliminar definitivamente la entidad: ' + elem.name)) {
+        $.ajax({
+            type: 'DELETE',
+            url: '/api/v1/entities/' + indice,
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        })
+    }
+    readIndex()
+}
+
+function update(elemento) {
+
     let nav = document.getElementsByTagName('nav')[0]
-    nav.innerHTML=''
-    nav.innerHTML='<input type="button" name="cancel" value="Cancel" onclick="readIndex();">'
+    nav.innerHTML = ''
+    nav.innerHTML = '<input type="button" name="cancel" value="Cancel" onclick="readIndex();">'
     let main = document.getElementsByTagName('main')[0]
-    main.innerHTML=''
+    main.innerHTML = ''
     let section = document.createElement('section')
-    section.style.width='25%'
-    section.style.maxWidth='50%'
-    section.style.marginLeft='37.5%'
-    section.style.textAlign='center'
-    section.style.borderStyle='solid'
-    section.style.borderWidth='medium'
-    let funcionSubmit=''
-    if(type==='productos'){
-        funcionSubmit='editProduct(this);'
-    }
-    else if(type==='personas'){
-        funcionSubmit='editPerson(this);'
-    }
-    else if(type==='entidades'){
-        funcionSubmit='editEntity(this);'
-    }
-    section.innerHTML='<form id="editForm" onsubmit="'+funcionSubmit+'">'+
-    '<fieldset id="'+indice+'">'+
-    '<legend>Editar '+elemento.name+'</legend>'+
-    '<label for="name">Nombre: </label>'+
-    '<input type="text" id="name" name="Name" value="'+elemento.name+'" required><br><br>'+
-    '<label for="birth">Nacimiento: </label>'+
-    '<input type="date" id="birth" name="Birth" value="'+elemento.birth+'" required><br><br>'+
-    '<label for="death">Fallecimiento: </label>'+
-    '<input type="date" id="death" name="Death" value="'+elemento.death+'"><br><br>'+
-    '<label for="image">URL Imagen: </label>'+
-    '<input type="url" id="image" name="Image" value="'+elemento.image+'" required><br><br>'+
-    '<label for="wiki">URL wiki: </label>'+
-    '<input type="url" id="wiki" name="Wiki" value="'+elemento.wiki+'" required><br><br>'+
-    '</fieldset>'+
-    '</form>'
+    section.style.width = '25%'
+    section.style.maxWidth = '50%'
+    section.style.marginLeft = '37.5%'
+    section.style.textAlign = 'center'
+    section.style.borderStyle = 'solid'
+    section.style.borderWidth = 'medium'
+
+    section.innerHTML = '<form id="editForm">' +
+        '<fieldset id="' + elemento.id + '">' +
+        '<legend>Editar ' + elemento.name + '</legend>' +
+        '<label for="name">Nombre: </label>' +
+        '<input type="text" id="name" name="Name" value="' + elemento.name + '" required><br><br>' +
+        '<label for="birth">Nacimiento: </label>' +
+        '<input type="date" id="birth" name="Birth" value="' + elemento.birthDate + '" required><br><br>' +
+        '<label for="death">Fallecimiento: </label>' +
+        '<input type="date" id="death" name="Death" value="' + elemento.deathDate + '"><br><br>' +
+        '<label for="image">URL Imagen: </label>' +
+        '<input type="url" id="image" name="Image" value="' + elemento.imageUrl + '" required><br><br>' +
+        '<label for="wiki">URL wiki: </label>' +
+        '<input type="url" id="wiki" name="Wiki" value="' + elemento.wikiUrl + '" required><br><br>' +
+        '</fieldset>' +
+        '<input id="btn-enviar" type="submit" value="Enviar">' +
+        '</form>'
 
     main.appendChild(section)
 }
 
-function updateProduct(){
-    let indice = +this.parentElement.parentElement.id
-    let type = this.parentElement.parentElement.parentElement.id
-    let elemento = products[indice]
-    update(elemento,type,indice)
+function updateProduct(elem) {
+    let indice = elem.parentElement.parentElement.id
+    let producto
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/products/' + indice,
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data, textStatus, request) {
+            producto = data.product
+            update(producto)
+            $('#editForm').on('submit', () => {
+                editProduct(request.getResponseHeader('etag'))
+            })
+        }
+    })
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/persons',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.persons.length > 0) {
+                $('fieldset').append('<h3>Participantes</h3><ul id="peopleList"></ul>')
+                for (person in data.persons) {
+                    let elemento = data.persons[person].person
+                    let checked = ''
+                    if (producto.persons) {
+                        checked = (producto.persons.includes(elemento.id) ? 'checked' : '')
+                    }
+                    $('#peopleList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox" ' + checked + '>' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
 
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/entities',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.entities.length > 0) {
+                $('fieldset').append('<h3>Entidades colaboradoras</h3><ul id="entitiesList"></ul>')
+                for (entity in data.entities) {
+                    let elemento = data.entities[entity].entity
+                    let checked = ''
+                    if (producto.entities) {
+                        checked = (producto.entities.includes(elemento.id) ? 'checked' : '')
+                    }
+                    $('#entitiesList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox" ' + checked + '>' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
+
+}
+
+function updatePerson(elem) {
+    let indice = elem.parentElement.parentElement.id
+    let person
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/persons/' + indice,
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data, textStatus, request) {
+            person = data.person
+            update(person)
+            $('#editForm').on('submit', () => {
+                editPerson(request.getResponseHeader('etag'))
+            })
+        }
+    })
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/products',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.products.length > 0) {
+                $('fieldset').append('<h3>Productos</h3><ul id="productsList"></ul>')
+                for (product in data.products) {
+                    let elemento = data.products[product].product
+                    let checked = ''
+                    if (person.products) {
+                        checked = (person.products.includes(elemento.id) ? 'checked' : '')
+                    }
+                    $('#productsList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox" ' + checked + '>' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/entities',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.entities.length > 0) {
+                $('fieldset').append('<h3>Entidades colaboradoras</h3><ul id="entitiesList"></ul>')
+                for (entity in data.entities) {
+                    let elemento = data.entities[entity].entity
+                    let checked = ''
+                    if (person.entities) {
+                        checked = (person.entities.includes(elemento.id) ? 'checked' : '')
+                    }
+                    $('#entitiesList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox" ' + checked + '>' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
+}
+
+function updateEntity(elem) {
+    let indice = elem.parentElement.parentElement.id
+    let entity
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/entities/' + indice,
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data, textStatus, request) {
+            entity = data.entity
+            update(entity)
+            $('#editForm').on('submit', () => {
+                editEntity(request.getResponseHeader('etag'))
+            })
+        }
+    })
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/products',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.products.length > 0) {
+                $('fieldset').append('<h3>Productos</h3><ul id="productsList"></ul>')
+                for (product in data.products) {
+                    let elemento = data.products[product].product
+                    let checked = ''
+                    if (entity.products) {
+                        checked = (entity.products.includes(elemento.id) ? 'checked' : '')
+                    }
+                    $('#productsList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox" ' + checked + '>' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/persons',
+        async: false,
+        headers: {"Authorization": JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data) {
+            if (data.persons.length > 0) {
+                $('fieldset').append('<h3>Participantes</h3><ul id="peopleList"></ul>')
+                for (person in data.persons) {
+                    let elemento = data.persons[person].person
+                    let checked = ''
+                    if (entity.persons) {
+                        checked = (entity.persons.includes(elemento.id) ? 'checked' : '')
+                    }
+                    $('#peopleList').append(
+                        '<li id="' + elemento.id + '">' +
+                        '<label for="' + elemento.id + '">' + elemento.name + '</label>' +
+                        '<input id="' + elemento.id + '" type="checkbox" ' + checked + '>' +
+                        '</li>'
+                    )
+                }
+            }
+        }
+    })
+}
+
+function getUsers() {
+    let nav = document.getElementsByTagName('nav')[0]
+    nav.innerHTML = '<input type="button" id="Inicio" value="Inicio" onclick="readIndex();"/>'
+    let main = document.getElementsByTagName('main')[0]
+    main.innerHTML = '<table style="border-collapse: collapse;" id="usersTable">' +
+        '<tr><th>id</th><th>username</th><th>email</th></tr>' +
+        '</table>'
+
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/users',
+        async: false,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data, textStatus, request) {
+            let usuarios = data.users
+            for (let elem of usuarios) {
+
+                if (elem.user.username !== username) {
+                    $('#usersTable').append(
+                        '<tr id="' + elem.user.id + '">' +
+                        '<td>' + elem.user.id + '</td>' +
+                        '<td>' + elem.user.username + '</td>' +
+                        '<td>' + elem.user.email + '</td>' +
+                        '<td>' + elem.user.role + '</td>' +
+                        '<td>' + elem.user.estado + '</td>' +
+                        (elem.user.estado === 'unauthorized'
+                            ? '<td><input type="button" id="authorize" value="Autorizar" onclick="autorizar(this.parentElement.parentElement);"/></td>'
+                            : '<td><input type="button" id="editUser" value="Editar" onclick="updateUser(this.parentElement.parentElement);"/></td>') +
+                        '<td><input type="button" id="deleteUser" value="Dar de Baja" onclick="deleteUser(this.parentElement.parentElement)"/></td>' +
+                        '</tr>')
+                } else {
+                    $('main').prepend(
+                        '<table><tr>' +
+                        '<td>' + elem.user.id + '</td>' +
+                        '<td>' + elem.user.username + '</td>' +
+                        '<td>' + elem.user.email + '</td>' +
+                        '<td>' + elem.user.role + '</td>' +
+                        '<td>' + elem.user.estado + '</td>' +
+                        '</tr></table><p style="text-align: center; margin: auto">(YOU)</p><br>'
+                    )
+                }
+            }
+        }
+    })
+}
+
+function updateUser(row) {
+    let role = row.children[3].innerText
+    let estado = row.children[4].innerText
+    let nav = document.getElementsByTagName('nav')[0]
+    nav.innerHTML = '<input type="button" name="cancel" value="Cancel" onclick="getUsers();">'
+    let main = document.getElementsByTagName('main')[0]
+    main.innerHTML = ''
+
+    let fieldset = document.createElement('fieldset')
+    fieldset.style.width = '25%'
+    fieldset.style.maxWidth = '50%'
+    fieldset.style.marginLeft = '37.5%'
+    fieldset.style.textAlign = 'center'
+    fieldset.style.borderStyle = 'solid'
+    fieldset.style.borderWidth = 'medium'
+    fieldset.setAttribute('id', row.id)
+    $.ajax({
+        type: "GET",
+        url: '/api/v1/users/' + row.id,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        // dataType: 'json',
+        success: function (data, statusText, response) {
+            fieldset.innerHTML = '<legend>Editar ' + row.children[1].innerText + '</legend>' +
+                '<label for="role">Role</label>' +
+                '<select id="role">' +
+                '<option value="writer" ' + (role === 'WRITER' ? 'selected' : '') + ' >WRITER</option>' +
+                '<option value="reader" ' + (role === 'READER' ? 'selected' : '') + ' >READER</option>' +
+                '</select>' +
+                '<label for="estado"></label>' +
+                '<select id="estado">' +
+                '<option value="active"' + (estado === 'active' ? 'selected' : '') + '>Active</option>' +
+                '<option value="inactive"' + (estado === 'inactive' ? 'selected' : '') + '>Inactive</option>' +
+                '</select>' +
+                '<input type="button" id="save" value="guardar">'
+            main.appendChild(fieldset)
+            $('#save').on('click', () => {
+                editUser(response.getResponseHeader('etag'))
+            })
+        }
+    })
+}
+
+function editUser(etag) {
     let fieldset = document.getElementsByTagName('fieldset')[0]
+    data = {
+        "role": document.getElementById('role').value,
+        "estado": document.getElementById('estado').value
+    }
 
-    fieldset.innerHTML+='<h3 style="text-align: left; color: yellow;">Participantes</h3>'
-    let peopleList = document.createElement('ul')
-    peopleList.setAttribute('id','peopleList')
-    for(person of people){
-        let listItem = document.createElement('li')
-        listItem.setAttribute('id', person.id)
-        listItem.innerHTML='<label for="'+person.id+'">'+person.name+'</label>'
-        let checkbox = document.createElement('input')
-        checkbox.setAttribute('id', person.id)
-        checkbox.setAttribute('type','checkbox')
-        listItem.appendChild(checkbox)
-        peopleList.appendChild(listItem)
-    }
-    fieldset.appendChild(peopleList)
-    
-    fieldset.innerHTML+='<h3 style="text-align: left; color: yellow;">Entidades colaboradoras</h3>'
-    let entitiesList = document.createElement('ul')
-    entitiesList.setAttribute('id','entitiesList')
-    for(entity of entities){
-        let listItem = document.createElement('li')
-        listItem.setAttribute('id', entity.id)
-        listItem.innerHTML='<label for="'+entity.id+'">'+entity.name+'</label>'
-        let checkbox = document.createElement('input')
-        checkbox.setAttribute('id', entity.id)
-        checkbox.setAttribute('type','checkbox')
-        let encontrado = false
-        listItem.appendChild(checkbox)
-        entitiesList.appendChild(listItem)
-    }
-    fieldset.appendChild(entitiesList)
-    
-    fieldset.innerHTML+='<input type="submit" value="Enviar">'
-    
-    for(item of document.getElementById('peopleList').children){
-        for(person of elemento.people){
-            if(person==item.children[1].id){
-                item.children[1].checked=true
-                break
-            }
+    $.ajax({
+        type: 'PUT',
+        url: '/api/v1/users/' + fieldset.id,
+        async: false,
+        headers: {
+            "Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token,
+            "If-Match": etag
+        },
+        data,
+        success: function () {
+            getUsers()
         }
-    }
-    for(item of document.getElementById('entitiesList').children){
-        for(entity of elemento.entities){
-            if(entity == item.children[1].id){
-                item.children[1].checked=true
-                break
-            }
+    })
+}
+
+function autorizar(row) {
+    let etag
+
+    $.ajax({
+        type: 'GET',
+        url: '/api/v1/users/' + row.id,
+        async: false,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data, statusText, request) {
+            etag = request.getResponseHeader('etag')
         }
+    })
+
+    let data = {"estado": "active"}
+    $.ajax({
+        type: 'PUT',
+        url: '/api/v1/users/' + row.id,
+        async: false,
+        headers: {
+            "Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token,
+            "If-Match": etag
+        },
+        data,
+        success: function () {
+            getUsers()
+        }
+    })
+}
+
+function deleteUser(row) {
+    if (window.confirm('Eliminar definitivamente el usuario: ' + row.children[1].innerText)) {
+        $.ajax({
+            type: 'DELETE',
+            url: '/api/v1/users/' + row.id,
+            headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        })
+    }
+    getUsers()
+}
+
+
+function checkIfUserExists() {
+    if ($('#newUsername').val() === '') {
+        window.alert('Introduzca un nombre de usuario válido')
+    } else {
+        $.ajax({
+            type: 'GET',
+            url: '/api/v1/users/username/' + $('#newUsername').val(),
+            success: function () {
+                window.alert('Username en uso')
+            },
+            error: function () {
+                let username = $('#newUsername').val()
+                $('nav').html('<input type="button" id="cancelSignin" value="Cancelar"/>')
+                $('main').html(
+                    '<section style="margin-left: 30%; width: 40%; border-style: solid">' +
+                    '<h4>Registrar nuevo usuario: ' + username + '</h4>' +
+                    '<form method="post">' +
+                    '<input type="hidden" id="username" name="username" value="' + username + '"/>' +
+                    '<label for="name">Nombre: </label>' +
+                    '<input type="text" id="name" name="name" placeholder="Nombre"/><br>' +
+                    '<br><label for="password">Contraseña: </label>' +
+                    '<input type="password" id="password" name="password" placeholder="Palabra clave"/><br>' +
+                    '<br><label for="email">Email: </label>' +
+                    '<input type="email" id="email" name="email" placeholder="Correo electronico"/><br>' +
+                    '<br><label for="birthDate">Fecha de nacimiento: </label>' +
+                    '<input type="date" id="birthDate" name="birthDate"/><br>' +
+                    '<input type="hidden" id="role" name="role" value="reader"/>' +
+                    '<br><input type="button" id="signin" value="Signin" />' +
+                    '</form>' +
+                    '<p>Un administrador del sistema autorizará el alta de su cuenta</p>' +
+                    '</section>'
+                )
+                $("#signin").click(function () {
+                    if (($('#name').val() === '') || ($('#email').val() === '') || ($('#password').val() === '') || ($('#birthDate').val() === '')) {
+                        window.alert('Faltan datos')
+                    } else {
+                        if (window.confirm('Enviar solicitud de registro?')) {
+                            $.post(
+                                "/api/v1/users",
+                                $("form").serialize(),
+                                null
+                            ).success(function (data) {
+                                window.location.reload()
+                            })
+                        }
+                    }
+                })
+                $("#cancelSignin").click(function () {
+                    window.location.reload()
+                })
+            }
+        })
     }
 }
 
-function updatePerson(){
-    let indice = +this.parentElement.parentElement.id
-    let type = this.parentElement.parentElement.parentElement.id
-    let elemento = people[indice]
-    update(elemento,type,indice)
-    let fieldset = document.getElementsByTagName('fieldset')[0]
-    fieldset.innerHTML+='<input type="submit" value="Enviar";">'
+function showProfile() {
+    $.ajax({
+        type: 'GET',
+        url: '/api/v1/users/' + JSON.parse(window.sessionStorage.getItem('usrData')).id,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data) {
+            let user = data.user
+            $('nav').html(
+                '<input type="button" value="Inicio" onclick="readIndex();">'
+            )
+            $('main').html(
+                '<section style="border-style: solid; width: 40%; margin-left: 30%">' +
+                '<form id="form-profile">' +
+                '<label>Usuario: ' + user.username + '</label><br><br>' +
+                '<label>Nombre: ' + user.name + '</label><br><br>' +
+                '<label>Fecha de nacimiento: ' + user.birthDate + '</label><br><br>' +
+                '<label>Email: ' + user.email + '</label><br>' +
+                '<input type="button" id="editProfile" name="editProfile" value="Editar"">' +
+                '<input type="button" id="changePasswd" name="changePasswd" value="Cambiar contraseña">' +
+                '</form>' +
+                '</section>'
+            )
+            $('#editProfile').click(editProfile)
+            $('#changePasswd').click(editPassword)
+        }
+    })
 }
 
-function updateEntity(){
-    let indice = +this.parentElement.parentElement.id
-    let type = this.parentElement.parentElement.parentElement.id
-    let elemento = entities[indice]
-    update(elemento,type,indice)
-
-    let fieldset = document.getElementsByTagName('fieldset')[0]
-
-    fieldset.innerHTML+='<h3 style="text-align: left; color: yellow;">Participantes</h3>'
-    let peopleList = document.createElement('ul')
-    peopleList.setAttribute('id','peopleList')
-    for(person of people){
-        let listItem = document.createElement('li')
-        listItem.setAttribute('id', person.id)
-        listItem.innerHTML='<label for="'+person.id+'">'+person.name+'</label>'
-        let checkbox = document.createElement('input')
-        checkbox.setAttribute('id', person.id)
-        checkbox.setAttribute('type','checkbox')
-        listItem.appendChild(checkbox)
-        peopleList.appendChild(listItem)
-    }
-    fieldset.appendChild(peopleList)
-
-    fieldset.innerHTML+='<input type="submit" value="Enviar">'
-    
-    for(item of document.getElementById('peopleList').children){
-        for(person of elemento.people){
-            if(person==item.children[1].id){
-                item.children[1].checked=true
-                break
-            }
+function editProfile() {
+    $.ajax({
+        type: 'GET',
+        url: '/api/v1/users/' + JSON.parse(window.sessionStorage.getItem('usrData')).id,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data, statusText, request) {
+            let user = data.user
+            $('main').html(
+                '<section style="border-style: solid; width: 40%; margin-left: 30%">' +
+                '<form id="form-profile">' +
+                '<label>Usuario: ' + user.username + '</label><br><br>' +
+                '<label for="name">Nombre: </label>' +
+                '<input type="text" id="name" name="name" value="' + user.name + '"><br><br>' +
+                '<label for="birthDate">Fecha de nacimiento: </label>' +
+                '<input type="date" id="birthDate" name="birthDate" value="' + user.birthDate + '"><br><br>' +
+                '<label for="email">Email: </label>' +
+                '<input type="text" id="email" name="email" value="' + user.email + '"><br>' +
+                '<input type="button" id="saveProfile" name="saveProfile" value="Guardar">' +
+                '</form>' +
+                '</section>'
+            )
+            $('#saveProfile').click(function () {
+                    $.ajax({
+                        type: 'PUT',
+                        url: '/api/v1/users/' + user.id,
+                        headers: {
+                            "Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token,
+                            "If-Match": request.getResponseHeader('etag')
+                        },
+                        data: $('#form-profile').serialize(),
+                        success: function () {
+                            showProfile()
+                        }
+                    })
+                }
+            )
         }
-    }
+    })
+}
+
+function editPassword() {
+    $.ajax({
+        type: 'GET',
+        url: '/api/v1/users/' + JSON.parse(window.sessionStorage.getItem('usrData')).id,
+        headers: {"Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token},
+        success: function (data, statusText, request) {
+            let user = data.user
+            $('nav').append('<input type="button" id="cancel-editpasswd" value="Cancelar">')
+            $('main').html(
+                '<section style="border-style: solid; width: 40%; margin-left: 30%">' +
+                '<form id="form-profile">' +
+                '<label>Contraseña actual </label>' +
+                '<input type="password" id="password" name="password"><br>' +
+                '<label>Nueva contraseña </label>' +
+                '<input type="password" id="newPasswd"><br>' +
+                '<input type="button" id="savePasswd" value="Guardar">' +
+                '</form>' +
+                '</section>'
+            )
+            $('#cancel-editpasswd').click(function () {
+                showProfile()
+            })
+            $('#savePasswd').click(function () {
+                let data = {
+                    "username": user.username,
+                    "password": $('#password').val()
+                }
+                $.post(
+                    "/access_token",
+                    data,
+                    null
+                ).success(function () {
+                    if ($('#newPasswd').val() === '') {
+                        window.alert('Introduce una nueva contraseña')
+                    } else {
+                        if (window.confirm('Cambiar la contraseña actual?')) {
+                            $.ajax({
+                                type: 'PUT',
+                                url: '/api/v1/users/' + user.id,
+                                headers: {
+                                    "Authorization": 'Bearer ' + JSON.parse(window.sessionStorage.getItem('usrData')).access_token,
+                                    "If-Match": request.getResponseHeader('etag')
+                                },
+                                data: {"password": $('#newPasswd').val()},
+                                success: function () {
+                                    showProfile()
+                                }
+                            })
+                        }
+                    }
+                })
+            })
+        }
+    })
 }

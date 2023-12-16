@@ -89,6 +89,8 @@ paths:
                     type: string
               example:
                 { "error": "invalid_grant", "error_description": "The user’s password is invalid or expired" }
+        '403':
+          $ref: '#/components/responses/Response_403'
   '/users':
     get:
       tags:
@@ -124,8 +126,6 @@ paths:
       summary: Creates a User resource.
       description: Creates a new user
       operationId: api_users_post
-      security:
-        - MiWApiSecurity: [ writer ]
       requestBody:
         $ref: '#/components/requestBodies/UserRequestBody'
       responses:
@@ -1144,6 +1144,13 @@ components:
         username:
           description: User name
           type: string
+        name:
+          description: User's surname
+          type: string
+        birthDate:
+          description: User's birthday
+          type: string
+          format: date
         email:
           description: User email
           type: string
@@ -1155,6 +1162,14 @@ components:
           enum:
             - reader
             - writer
+        estado:
+          description: User's status
+          type: string
+          default: unauthorized
+          enum:
+            - active
+            - inactive
+            - unauthorized
         # _links:
         #   description: link relations
         #   type: object
@@ -1175,8 +1190,11 @@ components:
         user:
           id: 1508
           username: user1508
+          name: Juan
+          birthDate: 1990-03-10
           email: miw.etsisi@upm.es
           role: reader
+          estado: active
           # _links:
           #   parent:
           #     href: /api/v1/users
@@ -1188,8 +1206,11 @@ components:
           user:
             id: 1508
             username: user1508
+            name: Juan
+            birthDate: 1990-03-10
             email: miw.etsisi@upm.es
             role: reader
+            estado: active
             # _links:
             #   parent:
             #     href: /api/v1/users
@@ -1387,6 +1408,13 @@ components:
               username:
                 description: User name
                 type: string
+              name:
+                description: User's surname
+                type: string
+              birthDate:
+                description: User's birthday
+                type: string
+                format: date
               email:
                 description: User email
                 type: string
@@ -1402,11 +1430,22 @@ components:
                 enum:
                   - reader
                   - writer
+              estado:
+                description: User's status
+                type: string
+                default: unauthorized
+                enum:
+                  - active
+                  - inactive
+                  - unauthorized
             example:
               username: username
+              name: name
+              birthDate: '2000-02-19'
               email: User_email@example.com
               password: User_password
               role: reader
+              estado: active
     LoginRequestBody:
       description: Registered **username** and **password**
       required: true
